@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Bruno & Lea - Unser Kalender',
-  description: 'Unser gemeinsamer Kalender für Bruno und Lea.',
+  description: 'Unser gemeinsamer Kalender für die ganze Familie.',
 };
 
 export default function RootLayout({
@@ -29,7 +29,8 @@ export default function RootLayout({
             {children}
           </main>
           <footer className='text-center py-6 text-gray-500 text-sm'>
-            Bruno & Lea  2026 - Unser Kalender
+            <p className='mb-1'>Bruno & Lea  2026</p>
+            <p>Kathja, Maren, Noah & Mareike, Volker, Lukas & Mandy</p>
           </footer>
         </div>
       </body>

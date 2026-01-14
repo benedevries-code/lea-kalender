@@ -6,7 +6,6 @@ export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check localStorage on mount
     const isDark = localStorage.getItem('darkMode') === 'true';
     setDarkMode(isDark);
     if (isDark) {
@@ -29,10 +28,9 @@ export default function DarkModeToggle() {
   return (
     <button
       onClick={toggleDarkMode}
-      className='p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-xl'
-      title={darkMode ? 'Light Mode' : 'Dark Mode'}
+      className='px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-sm font-medium flex items-center gap-2'
     >
-      {darkMode ? '' : ''}
+      {darkMode ? '' : ''} {darkMode ? 'Lightmode' : 'Darkmode'}
     </button>
   );
 }
