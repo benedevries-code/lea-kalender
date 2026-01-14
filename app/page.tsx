@@ -94,10 +94,17 @@ export default function Home() {
   };
 
   const getSelectionsForDate = (date: string) => {
-    return participants.flatMap(p => 
+    return participants.flatMap(p =>
       p.availableSlots
         .filter(s => s.date === date)
         .map(s => ({name: p.name, option: s.option}))
+    );
+  };
+
+  // Prüfen ob ein Tag bereits einen Eintrag hat
+  const hasEntryForDate = (dateStr: string) => {
+    return participants.some(p => 
+      p.availableSlots.some(s => s.date === dateStr)
     );
   };
 
@@ -129,7 +136,7 @@ export default function Home() {
     setSubmitted(true);
     setParticipantName('');
     setSelectedSlots({});
-    
+
     setTimeout(() => setSubmitted(false), 3000);
   };
 
@@ -151,7 +158,7 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       {/* Link teilen */}
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -159,7 +166,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-gray-800">Bruno Betreuungskalender</h1>
             <p className="text-gray-600 text-sm">Teile diesen Link mit der Familie</p>
           </div>
-          <button 
+          <button
             onClick={copyLink}
             className="px-6 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
           >
@@ -188,56 +195,72 @@ export default function Home() {
         </select>
       </div>
 
-      {/* Kalender für Datumsauswahl */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
+      {/* Kalender für Datumsauswahl - GRÖSSER */}
+      <div className="bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
         <p className="text-gray-600 text-sm mb-4">Klicke auf Tage, fuer die Bruno Betreuung braucht:</p>
         
-        <div className="border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
+        {/* Legende */}
+        <div className="flex flex-wrap gap-4 mb-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-primary"></div>
+            <span>Ausgewaehlt (Betreuung gesucht)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-green-500"></div>
+            <span>Jemand kuemmert sich um Bruno</span>
+          </div>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg text-xl"
+              className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              &lt;-
+              ←
             </button>
-            <span className="font-semibold text-lg">
+            <span className="font-bold text-2xl">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </span>
             <button
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg text-xl"
+              className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              -&gt;
+              →
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-2 mb-4">
             {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(day => (
-              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+              <div key={day} className="text-center text-base font-bold text-gray-600 py-3">
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-2">
             {days.map((date, i) => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               const isPast = date ? date < today : false;
-              const isSelected = date ? selectedDates.includes(formatDate(date)) : false;
+              const dateStr = date ? formatDate(date) : '';
+              const isSelected = date ? selectedDates.includes(dateStr) : false;
+              const hasEntry = date ? hasEntryForDate(dateStr) : false;
 
               return (
                 <button
                   key={i}
                   onClick={() => toggleDate(date)}
                   disabled={!date || isPast}
-                  className={"py-2 rounded-lg text-sm transition-all " +
+                  className={"py-4 rounded-xl text-lg font-semibold transition-all " +
                     (!date ? 'invisible ' : '') +
                     (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
-                    (isSelected
-                      ? 'bg-primary text-white font-semibold '
-                      : date && !isPast ? 'hover:bg-gray-100 ' : '')
+                    (hasEntry
+                      ? 'bg-green-500 text-white ring-2 ring-green-600 '
+                      : isSelected
+                        ? 'bg-primary text-white '
+                        : date && !isPast ? 'hover:bg-gray-100 ' : '')
                   }
                 >
                   {date?.getDate()}
@@ -248,7 +271,7 @@ export default function Home() {
         </div>
 
         {selectedDates.length > 0 && (
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-4 text-base text-gray-600">
             {selectedDates.length} Tag(e) ausgewaehlt
           </p>
         )}
@@ -258,7 +281,7 @@ export default function Home() {
       {selectedDates.length > 0 && (
         <div className="bg-white rounded-2xl shadow-xl p-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Deine Verfuegbarkeit eintragen</h2>
-          
+
           {submitted && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
               <p className="text-green-800 font-semibold">Eingetragen! Deine Auswahl wurde gespeichert.</p>
@@ -270,15 +293,19 @@ export default function Home() {
           <div className="space-y-4">
             {selectedDates.map(date => {
               const selections = getSelectionsForDate(date);
+              const hasEntry = selections.length > 0;
               return (
-                <div key={date} className="border border-gray-200 rounded-lg p-4">
+                <div key={date} className={"border rounded-lg p-4 " + (hasEntry ? 'border-green-500 bg-green-50' : 'border-gray-200')}>
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="md:w-1/4">
-                      <h3 className="font-semibold text-lg text-gray-800">{formatDateDisplay(date)}</h3>
+                      <h3 className={"font-semibold text-lg " + (hasEntry ? 'text-green-800' : 'text-gray-800')}>
+                        {formatDateDisplay(date)}
+                        {hasEntry && <span className="ml-2">✓</span>}
+                      </h3>
                       {selections.length > 0 && (
                         <div className="mt-1">
                           {selections.map((s, i) => (
-                            <p key={i} className="text-xs text-gray-500">
+                            <p key={i} className="text-sm text-green-700 font-medium">
                               {s.name}: {s.option}
                             </p>
                           ))}
