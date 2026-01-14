@@ -182,12 +182,22 @@ export default function Home() {
 
       {/* Bruno Kita Info */}
       <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl shadow-xl p-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <span className="text-3xl">🐕</span>
           <div>
             <h2 className="text-xl font-bold text-amber-800">Bruno ist in der Kita</h2>
             <p className="text-amber-700 text-lg font-medium">Montag - Freitag: 8:00 - 13:00 Uhr</p>
           </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
+          <p className="text-amber-800 font-medium flex items-center gap-2">
+            <span>⚠️</span>
+            <span>Nur <strong>Kathja</strong> und <strong>Maren</strong> duerfen Bruno direkt aus der Kita abholen!</span>
+          </p>
+          <p className="text-amber-800 font-medium flex items-center gap-2">
+            <span>🚗</span>
+            <span>Bitte an den <strong>Kindersitz</strong> denken!</span>
+          </p>
         </div>
       </div>
 
