@@ -30,6 +30,7 @@ export const BRUNO_OPTIONS = [
   'Bruno Kita abholen und abends abholen lassen',
   'Bruno Kita abholen mit mehreren Uebernachtungen',
   'Bruno zuhause abholen mit mehreren Uebernachtungen',
+  'Bei uns abends auf Bruno aufpassen',
 ];
 
 export const FAMILY_MEMBERS = [
