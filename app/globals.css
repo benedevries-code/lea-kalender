@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -73,4 +73,29 @@ body {
 
 .dark input::placeholder, .dark textarea::placeholder {
   color: #9ca3af !important;
+}
+
+/* Dropdown Select Styling im Dark Mode */
+.dark select {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  border: 2px solid #6366f1 !important;
+  border-radius: 8px;
+}
+
+.dark select:focus {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+}
+
+.dark select option {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  padding: 10px;
+}
+
+.dark select option:hover,
+.dark select option:checked {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
 }

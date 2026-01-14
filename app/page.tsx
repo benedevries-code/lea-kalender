@@ -1,16 +1,37 @@
 ﻿'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { CalendarEvent, BRUNO_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
-import { saveEvent } from '@/lib/storage';
+import { Participant, TimeSlot, BRUNO_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
+
+interface StoredData {
+  dates: string[];
+  participants: Participant[];
+}
 
 export default function Home() {
-  const router = useRouter();
-  const [creatorName, setCreatorName] = useState('');
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [participantName, setParticipantName] = useState('');
+  const [selectedSlots, setSelectedSlots] = useState<{[date: string]: string}>({});
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Laden der gespeicherten Daten
+  useEffect(() => {
+    const saved = localStorage.getItem('bruno-kalender');
+    if (saved) {
+      const data: StoredData = JSON.parse(saved);
+      setSelectedDates(data.dates || []);
+      setParticipants(data.participants || []);
+    }
+  }, []);
+
+  // Speichern bei Änderungen
+  const saveData = (dates: string[], parts: Participant[]) => {
+    const data: StoredData = { dates, participants: parts };
+    localStorage.setItem('bruno-kalender', JSON.stringify(data));
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -33,35 +54,81 @@ export default function Home() {
     return date.toISOString().split('T')[0];
   };
 
+  const formatDateDisplay = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const months = ['Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    return days[date.getDay()] + ', ' + date.getDate() + '. ' + months[date.getMonth()];
+  };
+
   const toggleDate = (date: Date | null) => {
     if (!date) return;
     const dateStr = formatDate(date);
+    let newDates: string[];
     if (selectedDates.includes(dateStr)) {
-      setSelectedDates(selectedDates.filter(d => d !== dateStr));
+      newDates = selectedDates.filter(d => d !== dateStr);
     } else {
-      setSelectedDates([...selectedDates, dateStr].sort());
+      newDates = [...selectedDates, dateStr].sort();
+    }
+    setSelectedDates(newDates);
+    saveData(newDates, participants);
+  };
+
+  const selectOption = (date: string, option: string) => {
+    if (option === '') {
+      setSelectedSlots(prev => {
+        const newSlots = {...prev};
+        delete newSlots[date];
+        return newSlots;
+      });
+    } else {
+      setSelectedSlots(prev => ({...prev, [date]: option}));
     }
   };
 
-  const createEvent = () => {
-    if (!creatorName || selectedDates.length === 0) {
-      alert('Bitte waehle deinen Namen und mindestens ein Datum.');
+  const getSelectionsForDate = (date: string) => {
+    return participants.flatMap(p => 
+      p.availableSlots
+        .filter(s => s.date === date)
+        .map(s => ({name: p.name, option: s.option}))
+    );
+  };
+
+  const submitAvailability = () => {
+    if (!participantName) {
+      alert('Bitte waehle deinen Namen.');
+      return;
+    }
+    if (Object.keys(selectedSlots).length === 0) {
+      alert('Bitte waehle mindestens eine Option fuer einen Tag.');
       return;
     }
 
-    const event: CalendarEvent = {
+    const slots: TimeSlot[] = Object.entries(selectedSlots).map(([date, option]) => ({
+      date,
+      option
+    }));
+
+    const participant: Participant = {
       id: uuidv4(),
-      title: 'Bruno Betreuungskalender',
-      description: 'Wer kann wann auf Bruno aufpassen?',
-      creatorName: creatorName,
-      dates: selectedDates,
-      options: BRUNO_OPTIONS,
-      participants: [],
+      name: participantName,
+      availableSlots: slots,
       createdAt: new Date().toISOString(),
     };
 
-    saveEvent(event);
-    router.push('/event/' + event.id);
+    const newParticipants = [...participants, participant];
+    setParticipants(newParticipants);
+    saveData(selectedDates, newParticipants);
+    setSubmitted(true);
+    setParticipantName('');
+    setSelectedSlots({});
+    
+    setTimeout(() => setSubmitted(false), 3000);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Link kopiert!');
   };
 
   const days = getDaysInMonth(currentMonth);
@@ -69,21 +136,111 @@ export default function Home() {
                       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Bruno Betreuungskalender</h1>
-        <p className="text-gray-600 mb-8">Waehle die Tage aus, fuer die du Betreuung planst. Dann koennen alle eintragen, wann und wie sie Bruno nehmen koennen.</p>
-
-        <div className="space-y-6">
-          {/* Ersteller Name */}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Link teilen */}
+      <div className="bg-white rounded-2xl shadow-xl p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Dein Name *
-            </label>
+            <h1 className="text-2xl font-bold text-gray-800">Bruno Betreuungskalender</h1>
+            <p className="text-gray-600 text-sm">Teile diesen Link mit der Familie</p>
+          </div>
+          <button 
+            onClick={copyLink}
+            className="px-6 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Link kopieren
+          </button>
+        </div>
+        {participants.length > 0 && (
+          <p className="mt-4 text-sm text-gray-600">
+            <span className="font-semibold text-primary">{participants.length}</span> Person(en) haben eingetragen: {participants.map(p => p.name).join(', ')}
+          </p>
+        )}
+      </div>
+
+      {/* Kalender für Datumsauswahl */}
+      <div className="bg-white rounded-2xl shadow-xl p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
+        <p className="text-gray-600 text-sm mb-4">Klicke auf Tage, fuer die Bruno Betreuung braucht:</p>
+        
+        <div className="border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+              className="p-2 hover:bg-gray-100 rounded-lg text-xl"
+            >
+              &lt;-
+            </button>
+            <span className="font-semibold text-lg">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </span>
+            <button
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+              className="p-2 hover:bg-gray-100 rounded-lg text-xl"
+            >
+              -&gt;
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(day => (
+              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((date, i) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const isPast = date ? date < today : false;
+              const isSelected = date ? selectedDates.includes(formatDate(date)) : false;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => toggleDate(date)}
+                  disabled={!date || isPast}
+                  className={"py-2 rounded-lg text-sm transition-all " +
+                    (!date ? 'invisible ' : '') +
+                    (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
+                    (isSelected
+                      ? 'bg-primary text-white font-semibold '
+                      : date && !isPast ? 'hover:bg-gray-100 ' : '')
+                  }
+                >
+                  {date?.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {selectedDates.length > 0 && (
+          <p className="mt-2 text-sm text-gray-600">
+            {selectedDates.length} Tag(e) ausgewaehlt
+          </p>
+        )}
+      </div>
+
+      {/* Verfügbarkeit eintragen */}
+      {selectedDates.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-xl p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Deine Verfuegbarkeit eintragen</h2>
+          
+          {submitted && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <p className="text-green-800 font-semibold">Eingetragen! Deine Auswahl wurde gespeichert.</p>
+            </div>
+          )}
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Dein Name</label>
             <select
-              value={creatorName}
-              onChange={(e) => setCreatorName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              value={participantName}
+              onChange={(e) => setParticipantName(e.target.value)}
+              className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">-- Bitte waehlen --</option>
               {FAMILY_MEMBERS.map(name => (
@@ -92,92 +249,63 @@ export default function Home() {
             </select>
           </div>
 
-          {/* Kalender */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tage auswaehlen, fuer die Betreuung gebraucht wird *
-            </label>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-xl"
-                >
-                  &lt;-
-                </button>
-                <span className="font-semibold text-lg">
-                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                </span>
-                <button
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-xl"
-                >
-                  -&gt;
-                </button>
-              </div>
+          <p className="text-gray-600 mb-4">Waehle fuer jeden Tag, wie du Bruno nehmen kannst:</p>
 
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(day => (
-                  <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                    {day}
+          <div className="space-y-4">
+            {selectedDates.map(date => {
+              const selections = getSelectionsForDate(date);
+              return (
+                <div key={date} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="md:w-1/4">
+                      <h3 className="font-semibold text-lg text-gray-800">{formatDateDisplay(date)}</h3>
+                      {selections.length > 0 && (
+                        <div className="mt-1">
+                          {selections.map((s, i) => (
+                            <p key={i} className="text-xs text-gray-500">
+                              {s.name}: {s.option}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="md:w-3/4">
+                      <select
+                        value={selectedSlots[date] || ''}
+                        onChange={(e) => selectOption(date, e.target.value)}
+                        className={
+                          "w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent " +
+                          (selectedSlots[date] ? 'border-primary bg-primary/5' : 'border-gray-300')
+                        }
+                      >
+                        <option value="">-- Option waehlen --</option>
+                        {BRUNO_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              );
+            })}
+          </div>
 
-              <div className="grid grid-cols-7 gap-1">
-                {days.map((date, i) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const isPast = date ? date < today : false;
-                  const isSelected = date ? selectedDates.includes(formatDate(date)) : false;
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => toggleDate(date)}
-                      disabled={!date || isPast}
-                      className={"py-2 rounded-lg text-sm transition-all " +
-                        (!date ? 'invisible ' : '') +
-                        (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
-                        (isSelected
-                          ? 'bg-primary text-white font-semibold '
-                          : date && !isPast ? 'hover:bg-gray-100 ' : '')
-                      }
-                    >
-                      {date?.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-gray-600">
+                {Object.keys(selectedSlots).length} von {selectedDates.length} Tagen ausgewaehlt
+              </span>
             </div>
-
-            {selectedDates.length > 0 && (
-              <p className="mt-2 text-sm text-gray-600">
-                {selectedDates.length} Tag(e) ausgewaehlt
-              </p>
-            )}
+            <button
+              onClick={submitAvailability}
+              disabled={!participantName || Object.keys(selectedSlots).length === 0}
+              className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Eintragen
+            </button>
           </div>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2">Verfuegbare Optionen</h3>
-            <p className="text-blue-700 text-sm mb-2">Die Teilnehmer koennen fuer jeden Tag eine dieser Optionen waehlen:</p>
-            <ul className="text-sm text-blue-700 space-y-1">
-              {BRUNO_OPTIONS.map((opt, i) => (
-                <li key={i}>{opt}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Erstellen Button */}
-          <button
-            onClick={createEvent}
-            className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 transition-opacity text-lg"
-          >
-            Kalender erstellen und Link teilen
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
