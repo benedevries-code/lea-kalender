@@ -24,14 +24,15 @@ export default function EventPage() {
   }, [eventId]);
 
   const selectOption = (date: string, option: string) => {
-    setSelectedSlots(prev => {
-      if (prev[date] === option) {
+    if (option === '') {
+      setSelectedSlots(prev => {
         const newSlots = {...prev};
         delete newSlots[date];
         return newSlots;
-      }
-      return {...prev, [date]: option};
-    });
+      });
+    } else {
+      setSelectedSlots(prev => ({...prev, [date]: option}));
+    }
   };
 
   const getSelectionsForDate = (date: string) => {
@@ -167,39 +168,39 @@ export default function EventPage() {
 
         <p className="text-gray-600 mb-4">Waehle fuer jeden Tag, wie du Bruno nehmen kannst:</p>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {event.dates.map(date => {
             const selections = getSelectionsForDate(date);
             return (
               <div key={date} className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg text-gray-800 mb-3">{formatDateDisplay(date)}</h3>
-                
-                {selections.length > 0 && (
-                  <div className="mb-4 bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-600 mb-2">Bereits eingetragen:</p>
-                    {selections.map((s, i) => (
-                      <div key={i} className="text-sm text-gray-700">
-                        <span className="font-medium">{s.name}:</span> {s.option}
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                  <div className="md:w-1/4">
+                    <h3 className="font-semibold text-lg text-gray-800">{formatDateDisplay(date)}</h3>
+                    {selections.length > 0 && (
+                      <div className="mt-1">
+                        {selections.map((s, i) => (
+                          <p key={i} className="text-xs text-gray-500">
+                            {s.name}: {s.option}
+                          </p>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-
-                <div className="grid gap-2">
-                  {options.map(option => (
-                    <button
-                      key={option}
-                      onClick={() => selectOption(date, option)}
+                  <div className="md:w-3/4">
+                    <select
+                      value={selectedSlots[date] || ''}
+                      onChange={(e) => selectOption(date, e.target.value)}
                       className={
-                        "w-full text-left px-4 py-3 rounded-lg border-2 transition-all " +
-                        (selectedSlots[date] === option
-                          ? 'border-primary bg-primary/10 text-primary font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700')
+                        "w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent " +
+                        (selectedSlots[date] ? 'border-primary bg-primary/5' : 'border-gray-300')
                       }
                     >
-                      {option}
-                    </button>
-                  ))}
+                      <option value="">-- Option waehlen --</option>
+                      {options.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             );
