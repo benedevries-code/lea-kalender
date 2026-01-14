@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { CalendarEvent, Participant, TimeSlot, BRUNO_OPTIONS } from '@/lib/types';
+import { CalendarEvent, Participant, TimeSlot, BRUNO_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
 import { getEvent, saveEvent } from '@/lib/storage';
 
 export default function EventPage() {
@@ -44,12 +44,12 @@ export default function EventPage() {
   };
 
   const submitAvailability = () => {
-    if (!participantName.trim()) {
-      alert('Bitte gib deinen Namen ein.');
+    if (!participantName) {
+      alert('Bitte waehle deinen Namen.');
       return;
     }
     if (Object.keys(selectedSlots).length === 0) {
-      alert('Bitte wähle mindestens eine Option für einen Tag.');
+      alert('Bitte waehle mindestens eine Option fuer einen Tag.');
       return;
     }
     if (!event) return;
@@ -61,7 +61,7 @@ export default function EventPage() {
 
     const participant: Participant = {
       id: uuidv4(),
-      name: participantName.trim(),
+      name: participantName,
       availableSlots: slots,
       createdAt: new Date().toISOString(),
     };
@@ -87,7 +87,7 @@ export default function EventPage() {
   const formatDateDisplay = (dateStr: string) => {
     const date = new Date(dateStr);
     const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-    const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const months = ['Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
     return days[date.getDay()] + ', ' + date.getDate() + '. ' + months[date.getMonth()];
   };
 
@@ -102,7 +102,7 @@ export default function EventPage() {
   if (!event) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
-        <div className="text-6xl mb-4">😕</div>
+        <div className="text-6xl mb-4">:(</div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Kalender nicht gefunden</h1>
         <p className="text-gray-600 mb-6">Dieser Kalender existiert nicht.</p>
         <a href="/" className="inline-block px-6 py-3 bg-primary text-white rounded-lg">
@@ -119,12 +119,12 @@ export default function EventPage() {
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">🐕 {event.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">{event.title}</h1>
             <p className="text-gray-600 mb-3">{event.description}</p>
             <p className="text-sm text-gray-500">Erstellt von <span className="font-medium">{event.creatorName}</span></p>
           </div>
           <button onClick={copyLink} className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-            {copied ? '✅ Kopiert!' : '🔗 Link kopieren'}
+            {copied ? 'Kopiert!' : 'Link kopieren'}
           </button>
         </div>
         {event.participants.length > 0 && (
@@ -139,7 +139,7 @@ export default function EventPage() {
       {submitted && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🎉</span>
+            <span className="text-2xl">:)</span>
             <div>
               <h3 className="font-semibold text-green-800">Eingetragen!</h3>
               <p className="text-green-700 text-sm">Deine Auswahl wurde gespeichert.</p>
@@ -149,27 +149,30 @@ export default function EventPage() {
       )}
 
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Deine Verfügbarkeit eintragen</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Deine Verfuegbarkeit eintragen</h2>
         
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Dein Name</label>
-          <input
-            type="text"
+          <select
             value={participantName}
             onChange={(e) => setParticipantName(e.target.value)}
-            placeholder="Name eingeben..."
             className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
+          >
+            <option value="">-- Bitte waehlen --</option>
+            {FAMILY_MEMBERS.map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
         </div>
 
-        <p className="text-gray-600 mb-4">Wähle für jeden Tag, wie du Bruno nehmen kannst:</p>
+        <p className="text-gray-600 mb-4">Waehle fuer jeden Tag, wie du Bruno nehmen kannst:</p>
 
         <div className="space-y-6">
           {event.dates.map(date => {
             const selections = getSelectionsForDate(date);
             return (
               <div key={date} className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg text-gray-800 mb-3">📅 {formatDateDisplay(date)}</h3>
+                <h3 className="font-semibold text-lg text-gray-800 mb-3">{formatDateDisplay(date)}</h3>
                 
                 {selections.length > 0 && (
                   <div className="mb-4 bg-gray-50 rounded-lg p-3">
@@ -206,15 +209,15 @@ export default function EventPage() {
         <div className="mt-6 pt-6 border-t border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-600">
-              {Object.keys(selectedSlots).length} von {event.dates.length} Tagen ausgewählt
+              {Object.keys(selectedSlots).length} von {event.dates.length} Tagen ausgewaehlt
             </span>
           </div>
           <button
             onClick={submitAvailability}
-            disabled={!participantName.trim() || Object.keys(selectedSlots).length === 0}
+            disabled={!participantName || Object.keys(selectedSlots).length === 0}
             className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Eintragen ✓
+            Eintragen
           </button>
         </div>
       </div>

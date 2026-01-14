@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { CalendarEvent, BRUNO_OPTIONS } from '@/lib/types';
+import { CalendarEvent, BRUNO_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
 import { saveEvent } from '@/lib/storage';
 
 export default function Home() {
@@ -44,8 +44,8 @@ export default function Home() {
   };
 
   const createEvent = () => {
-    if (!creatorName.trim() || selectedDates.length === 0) {
-      alert('Bitte gib deinen Namen ein und wähle mindestens ein Datum.');
+    if (!creatorName || selectedDates.length === 0) {
+      alert('Bitte waehle deinen Namen und mindestens ein Datum.');
       return;
     }
 
@@ -53,7 +53,7 @@ export default function Home() {
       id: uuidv4(),
       title: 'Bruno Betreuungskalender',
       description: 'Wer kann wann auf Bruno aufpassen?',
-      creatorName: creatorName.trim(),
+      creatorName: creatorName,
       dates: selectedDates,
       options: BRUNO_OPTIONS,
       participants: [],
@@ -65,14 +65,14 @@ export default function Home() {
   };
 
   const days = getDaysInMonth(currentMonth);
-  const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
                       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2"> Bruno Betreuungskalender</h1>
-        <p className="text-gray-600 mb-8">Wähle die Tage aus, für die du Betreuung planst. Dann können alle eintragen, wann und wie sie Bruno nehmen können.</p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Bruno Betreuungskalender</h1>
+        <p className="text-gray-600 mb-8">Waehle die Tage aus, fuer die du Betreuung planst. Dann koennen alle eintragen, wann und wie sie Bruno nehmen koennen.</p>
 
         <div className="space-y-6">
           {/* Ersteller Name */}
@@ -80,19 +80,22 @@ export default function Home() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Dein Name *
             </label>
-            <input
-              type="text"
+            <select
               value={creatorName}
               onChange={(e) => setCreatorName(e.target.value)}
-              placeholder="Dein Name"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            >
+              <option value="">-- Bitte waehlen --</option>
+              {FAMILY_MEMBERS.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Kalender */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tage auswählen, für die Betreuung gebraucht wird *
+              Tage auswaehlen, fuer die Betreuung gebraucht wird *
             </label>
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
@@ -100,7 +103,7 @@ export default function Home() {
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
                   className="p-2 hover:bg-gray-100 rounded-lg text-xl"
                 >
-                  
+                  &lt;-
                 </button>
                 <span className="font-semibold text-lg">
                   {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -109,7 +112,7 @@ export default function Home() {
                   onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
                   className="p-2 hover:bg-gray-100 rounded-lg text-xl"
                 >
-                  
+                  -&gt;
                 </button>
               </div>
 
@@ -150,18 +153,18 @@ export default function Home() {
 
             {selectedDates.length > 0 && (
               <p className="mt-2 text-sm text-gray-600">
-                 {selectedDates.length} Tag(e) ausgewählt
+                {selectedDates.length} Tag(e) ausgewaehlt
               </p>
             )}
           </div>
 
           {/* Info Box */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2"> Verfügbare Optionen</h3>
-            <p className="text-blue-700 text-sm mb-2">Die Teilnehmer können für jeden Tag eine dieser Optionen wählen:</p>
+            <h3 className="font-semibold text-blue-800 mb-2">Verfuegbare Optionen</h3>
+            <p className="text-blue-700 text-sm mb-2">Die Teilnehmer koennen fuer jeden Tag eine dieser Optionen waehlen:</p>
             <ul className="text-sm text-blue-700 space-y-1">
               {BRUNO_OPTIONS.map((opt, i) => (
-                <li key={i}> {opt}</li>
+                <li key={i}>{opt}</li>
               ))}
             </ul>
           </div>
@@ -171,7 +174,7 @@ export default function Home() {
             onClick={createEvent}
             className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 transition-opacity text-lg"
           >
-            Kalender erstellen & Link teilen 
+            Kalender erstellen und Link teilen
           </button>
         </div>
       </div>
