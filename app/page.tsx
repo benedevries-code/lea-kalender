@@ -16,21 +16,28 @@ export default function Home() {
   const [selectedSlots, setSelectedSlots] = useState<{[date: string]: string}>({});
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Laden der gespeicherten Daten
+  // Laden der gespeicherten Daten von der API
   useEffect(() => {
-    const saved = localStorage.getItem('bruno-kalender');
-    if (saved) {
-      const data: StoredData = JSON.parse(saved);
-      setSelectedDates(data.dates || []);
-      setParticipants(data.participants || []);
-    }
+    fetch('/api/data')
+      .then(res => res.json())
+      .then((data: StoredData) => {
+        setSelectedDates(data.dates || []);
+        setParticipants(data.participants || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  // Speichern bei Änderungen
-  const saveData = (dates: string[], parts: Participant[]) => {
+  // Speichern bei Änderungen an die API
+  const saveData = async (dates: string[], parts: Participant[]) => {
     const data: StoredData = { dates, participants: parts };
-    localStorage.setItem('bruno-kalender', JSON.stringify(data));
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -94,7 +101,7 @@ export default function Home() {
     );
   };
 
-  const submitAvailability = () => {
+  const submitAvailability = async () => {
     if (!participantName) {
       alert('Bitte waehle deinen Namen.');
       return;
@@ -118,7 +125,7 @@ export default function Home() {
 
     const newParticipants = [...participants, participant];
     setParticipants(newParticipants);
-    saveData(selectedDates, newParticipants);
+    await saveData(selectedDates, newParticipants);
     setSubmitted(true);
     setParticipantName('');
     setSelectedSlots({});
@@ -134,6 +141,14 @@ export default function Home() {
   const days = getDaysInMonth(currentMonth);
   const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
                       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
