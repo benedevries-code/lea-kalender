@@ -35,9 +35,7 @@ export const BRUNO_OPTIONS = [
 export const FAMILY_MEMBERS = [
   'Kathja',
   'Maren',
-  'Noah',
-  'Mareike',
+  'Noah & Mareike',
   'Volker',
-  'Lukas',
-  'Mandy',
+  'Lukas & Mandy',
 ];
