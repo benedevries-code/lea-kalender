@@ -180,6 +180,17 @@ export default function Home() {
         )}
       </div>
 
+      {/* Bruno Kita Info */}
+      <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl shadow-xl p-6">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🐕</span>
+          <div>
+            <h2 className="text-xl font-bold text-amber-800">Bruno ist in der Kita</h2>
+            <p className="text-amber-700 text-lg font-medium">Montag - Freitag: 8:00 - 13:00 Uhr</p>
+          </div>
+        </div>
+      </div>
+
       {/* Name auswählen */}
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Dein Name</h2>
