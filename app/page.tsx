@@ -158,6 +158,21 @@ export default function Home() {
         )}
       </div>
 
+      {/* Name auswählen */}
+      <div className="bg-white rounded-2xl shadow-xl p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Dein Name</h2>
+        <select
+          value={participantName}
+          onChange={(e) => setParticipantName(e.target.value)}
+          className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+        >
+          <option value="">-- Bitte waehlen --</option>
+          {FAMILY_MEMBERS.map(name => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Kalender für Datumsauswahl */}
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
@@ -234,20 +249,6 @@ export default function Home() {
               <p className="text-green-800 font-semibold">Eingetragen! Deine Auswahl wurde gespeichert.</p>
             </div>
           )}
-          
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Dein Name</label>
-            <select
-              value={participantName}
-              onChange={(e) => setParticipantName(e.target.value)}
-              className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">-- Bitte waehlen --</option>
-              {FAMILY_MEMBERS.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-          </div>
 
           <p className="text-gray-600 mb-4">Waehle fuer jeden Tag, wie du Bruno nehmen kannst:</p>
 
