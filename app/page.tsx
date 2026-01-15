@@ -264,12 +264,17 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-gray-800">Bruno Betreuungskalender</h1>
             <p className="text-gray-600 text-sm">Teile diesen Link mit der Familie</p>
           </div>
-          <button
-            onClick={copyLink}
-            className="px-6 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Link kopieren
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 px-4 py-2 rounded-lg">
+              <span className="text-primary font-semibold">👤 {user}</span>
+            </div>
+            <button
+              onClick={copyLink}
+              className="px-6 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Link kopieren
+            </button>
+          </div>
         </div>
       </div>
 
@@ -698,39 +703,6 @@ export default function Home() {
             Betreuung eintragen
           </button>
         </div>
-
-        {/* Liste der Betreuungseinträge */}
-        {betreuungEntries.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-bold text-blue-800 mb-2">Geplante Betreuung durch Familie</h3>
-            <div className="space-y-3">
-              {betreuungEntries
-                .sort((a, b) => a.date.localeCompare(b.date))
-                .map((entry, idx) => (
-                  <div key={idx} className="rounded-lg p-4 border-2 bg-blue-100 border-blue-400">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-blue-800">{formatDateDisplay(entry.date)}</h4>
-                        <p className="text-blue-700">Uhrzeit: {entry.timeFrom} - {entry.timeTo} Uhr</p>
-                        {entry.abholort && (
-                          <p className="text-blue-700">Abholort: {entry.abholort}</p>
-                        )}
-                        {entry.transport && (
-                          <p className="text-blue-700">
-                            {entry.transport === 'selbst_abholen' ? 'Ich hole Bruno ab' : 'Bruno muss zurückgebracht werden'}
-                          </p>
-                        )}
-                        {entry.message && (
-                          <p className="text-blue-600 text-sm mt-1">Nachricht: {entry.message}</p>
-                        )}
-                        <p className="text-blue-800 font-bold mt-1">👤 {entry.name}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
