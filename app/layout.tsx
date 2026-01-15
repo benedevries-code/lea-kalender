@@ -1,13 +1,14 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import DarkModeToggle from '@/components/DarkModeToggle';
+import AnimatedBackground from '@/components/AnimatedBackground';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Bruno & Lea - Unser Kalender',
-  description: 'Unser gemeinsamer Kalender für die ganze Familie.',
+  description: 'Unser gemeinsamer Kalender fuer die ganze Familie.',
 };
 
 export default function RootLayout({
@@ -18,10 +19,11 @@ export default function RootLayout({
   return (
     <html lang='de'>
       <body className={inter.className}>
-        <div className='min-h-screen bg-gray-50'>
+        <AnimatedBackground />
+        <div className='min-h-screen bg-gray-50 relative z-10'>
           <header className='gradient-bg text-white py-4 shadow-lg'>
             <div className='container mx-auto px-4 flex items-center justify-between'>
-              <a href='/' className='text-2xl font-bold'> Bruno & Lea</a>
+              <a href='/' className='text-2xl font-bold'>Bruno & Lea</a>
               <DarkModeToggle />
             </div>
           </header>
@@ -36,4 +38,3 @@ export default function RootLayout({
     </html>
   );
 }
-
