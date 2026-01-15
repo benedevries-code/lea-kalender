@@ -203,6 +203,18 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Absage-Hinweis */}
+      <div className="bg-red-100 border-2 border-red-400 rounded-2xl shadow-xl p-6">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">&#9200;</span>
+          <div>
+            <h2 className="text-xl font-bold text-red-800">Wichtig: Absagen</h2>
+            <p className="text-red-700">Absagen sind hier nur <strong>48 Stunden vorher</strong> moeglich.</p>
+            <p className="text-red-700">Danach bitte per <strong>WhatsApp</strong> oder <strong>Anruf</strong> absagen!</p>
+          </div>
+        </div>
+      </div>
+
       {sortedRequests.length > 0 && (
         <div className="bg-green-100 border-2 border-green-400 rounded-2xl shadow-xl p-6">
           <div className="flex items-center gap-3 mb-4">
