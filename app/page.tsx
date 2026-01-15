@@ -278,14 +278,14 @@ export default function Home() {
               const existingRequest = getLeaRequestForDate(date);
               return (
                 <div key={date} className="bg-white rounded-lg p-4 border border-pink-200">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3">
-                    <div className="md:w-1/4">
+                  <div className="flex flex-col gap-3">
+                    <div>
                       <h3 className="font-semibold text-pink-800">{formatDateDisplay(date)}</h3>
                       {existingRequest && (
                         <p className="text-sm text-pink-600">Aktuell: {existingRequest.helpType}</p>
                       )}
                     </div>
-                    <div className="md:w-3/4">
+                    <div>
                       <select
                         value={leaSelectedSlots[date] || ''}
                         onChange={(e) => selectLeaOption(date, e.target.value)}
@@ -295,8 +295,19 @@ export default function Home() {
                         {LEA_HELP_OPTIONS.map(option => (
                           <option key={option} value={option}>{option}</option>
                         ))}
+                        <option value="custom">Eigene Nachricht schreiben...</option>
                       </select>
                     </div>
+                    {leaSelectedSlots[date] === 'custom' && (
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Schreibe hier deine Nachricht..."
+                          onBlur={(e) => { if (e.target.value) selectLeaOption(date, e.target.value); }}
+                          className="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
