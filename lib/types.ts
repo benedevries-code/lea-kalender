@@ -33,6 +33,14 @@ export const BRUNO_OPTIONS = [
   'Bei uns abends auf Bruno aufpassen',
 ];
 
+export const LEA_HELP_OPTIONS = [
+  'Brauche Hilfe bei Kita-Abholung',
+  'Brauche Abend-Betreuung',
+  'Brauche Uebernachtungs-Betreuung',
+  'Brauche mehrere Tage Betreuung',
+  'Brauche Hilfe - flexibel',
+];
+
 export const FAMILY_MEMBERS = [
   'Katja',
   'Maren',

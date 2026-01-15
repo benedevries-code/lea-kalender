@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Participant, TimeSlot, BRUNO_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
+import { Participant, TimeSlot, BRUNO_OPTIONS, LEA_HELP_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
 
 interface StoredData {
   dates: string[];
   participants: Participant[];
+  leaRequests: {date: string; helpType: string}[];
 }
 
 export default function Home() {
@@ -17,6 +18,9 @@ export default function Home() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [leaRequests, setLeaRequests] = useState<{date: string; helpType: string}[]>([]);
+  const [leaSelectedSlots, setLeaSelectedSlots] = useState<{[date: string]: string}>({});
+  const [leaSubmitted, setLeaSubmitted] = useState(false);
 
   // Laden der gespeicherten Daten von der API
   useEffect(() => {
@@ -25,14 +29,15 @@ export default function Home() {
       .then((data: StoredData) => {
         setSelectedDates(data.dates || []);
         setParticipants(data.participants || []);
+        setLeaRequests(data.leaRequests || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
   // Speichern bei Änderungen an die API
-  const saveData = async (dates: string[], parts: Participant[]) => {
-    const data: StoredData = { dates, participants: parts };
+  const saveData = async (dates: string[], parts: Participant[], leaReqs: {date: string; helpType: string}[]) => {
+    const data: StoredData = { dates, participants: parts, leaRequests: leaReqs };
     await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -82,7 +87,7 @@ export default function Home() {
       newDates = [...selectedDates, dateStr].sort();
     }
     setSelectedDates(newDates);
-    saveData(newDates, participants);
+    saveData(newDates, participants, leaRequests);
   };
 
   const selectOption = (date: string, option: string) => {
@@ -97,6 +102,18 @@ export default function Home() {
     }
   };
 
+  const selectLeaOption = (date: string, option: string) => {
+    if (option === '') {
+      setLeaSelectedSlots(prev => {
+        const newSlots = {...prev};
+        delete newSlots[date];
+        return newSlots;
+      });
+    } else {
+      setLeaSelectedSlots(prev => ({...prev, [date]: option}));
+    }
+  };
+
   const getSelectionsForDate = (date: string) => {
     return participants.flatMap(p =>
       p.availableSlots
@@ -105,11 +122,20 @@ export default function Home() {
     );
   };
 
+  const getLeaRequestForDate = (date: string) => {
+    return leaRequests.find(r => r.date === date);
+  };
+
   // Prüfen ob ein Tag bereits einen Eintrag hat
   const hasEntryForDate = (dateStr: string) => {
-    return participants.some(p => 
+    return participants.some(p =>
       p.availableSlots.some(s => s.date === dateStr)
     );
+  };
+
+  // Prüfen ob Lea für diesen Tag Hilfe braucht
+  const leaNeedsHelpForDate = (dateStr: string) => {
+    return leaRequests.some(r => r.date === dateStr);
   };
 
   const submitAvailability = async () => {
@@ -136,12 +162,37 @@ export default function Home() {
 
     const newParticipants = [...participants, participant];
     setParticipants(newParticipants);
-    await saveData(selectedDates, newParticipants);
+    await saveData(selectedDates, newParticipants, leaRequests);
     setSubmitted(true);
     setParticipantName('');
     setSelectedSlots({});
 
     setTimeout(() => setSubmitted(false), 3000);
+  };
+
+  const submitLeaRequest = async () => {
+    if (Object.keys(leaSelectedSlots).length === 0) {
+      alert('Bitte waehle mindestens eine Option fuer einen Tag.');
+      return;
+    }
+
+    const newRequests = Object.entries(leaSelectedSlots).map(([date, helpType]) => ({
+      date,
+      helpType
+    }));
+
+    // Alte Requests für diese Tage entfernen und neue hinzufügen
+    const updatedRequests = [
+      ...leaRequests.filter(r => !newRequests.some(nr => nr.date === r.date)),
+      ...newRequests
+    ];
+
+    setLeaRequests(updatedRequests);
+    await saveData(selectedDates, participants, updatedRequests);
+    setLeaSubmitted(true);
+    setLeaSelectedSlots({});
+
+    setTimeout(() => setLeaSubmitted(false), 3000);
   };
 
   const copyLink = () => {
@@ -205,6 +256,64 @@ export default function Home() {
         </div>
       </div>
 
+      {/* LEA BEREICH */}
+      <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-3xl">👩</span>
+          <div>
+            <h2 className="text-xl font-bold text-pink-800">Lea - Hilfe anfragen</h2>
+            <p className="text-pink-700">Trage hier ein, wann du Unterstuetzung brauchst</p>
+          </div>
+        </div>
+
+        {leaSubmitted && (
+          <div className="bg-pink-200 border border-pink-400 rounded-lg p-4 mb-4">
+            <p className="text-pink-800 font-semibold">Gespeichert! Deine Anfrage wurde eingetragen.</p>
+          </div>
+        )}
+
+        {selectedDates.length > 0 ? (
+          <div className="space-y-3">
+            {selectedDates.map(date => {
+              const existingRequest = getLeaRequestForDate(date);
+              return (
+                <div key={date} className="bg-white rounded-lg p-4 border border-pink-200">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3">
+                    <div className="md:w-1/4">
+                      <h3 className="font-semibold text-pink-800">{formatDateDisplay(date)}</h3>
+                      {existingRequest && (
+                        <p className="text-sm text-pink-600">Aktuell: {existingRequest.helpType}</p>
+                      )}
+                    </div>
+                    <div className="md:w-3/4">
+                      <select
+                        value={leaSelectedSlots[date] || ''}
+                        onChange={(e) => selectLeaOption(date, e.target.value)}
+                        className="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                      >
+                        <option value="">-- Was brauchst du? --</option>
+                        {LEA_HELP_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <button
+              onClick={submitLeaRequest}
+              disabled={Object.keys(leaSelectedSlots).length === 0}
+              className="w-full py-3 bg-pink-500 text-white font-semibold rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Hilfe-Anfrage speichern
+            </button>
+          </div>
+        ) : (
+          <p className="text-pink-700">Waehle zuerst Tage im Kalender aus.</p>
+        )}
+      </div>
+
       {/* Name auswählen */}
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Dein Name</h2>
@@ -224,16 +333,20 @@ export default function Home() {
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
         <p className="text-gray-600 text-sm mb-4">Klicke auf Tage, fuer die Bruno Betreuung braucht:</p>
-        
+
         {/* Legende */}
         <div className="flex flex-wrap gap-4 mb-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-primary"></div>
-            <span>Ausgewaehlt (Betreuung gesucht)</span>
+            <span>Betreuung gesucht</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-green-500"></div>
-            <span>Jemand kuemmert sich um Bruno</span>
+            <span>Jemand kuemmert sich</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-pink-500"></div>
+            <span>Lea braucht Hilfe</span>
           </div>
         </div>
 
@@ -272,6 +385,7 @@ export default function Home() {
               const dateStr = date ? formatDate(date) : '';
               const isSelected = date ? selectedDates.includes(dateStr) : false;
               const hasEntry = date ? hasEntryForDate(dateStr) : false;
+              const leaNeedsHelp = date ? leaNeedsHelpForDate(dateStr) : false;
 
               return (
                 <button
@@ -283,9 +397,11 @@ export default function Home() {
                     (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
                     (hasEntry
                       ? 'bg-green-500 text-white ring-2 ring-green-600 '
-                      : isSelected
-                        ? 'bg-primary text-white '
-                        : date && !isPast ? 'hover:bg-gray-100 ' : '')
+                      : leaNeedsHelp && isSelected
+                        ? 'bg-pink-500 text-white ring-2 ring-pink-600 '
+                        : isSelected
+                          ? 'bg-primary text-white '
+                          : date && !isPast ? 'hover:bg-gray-100 ' : '')
                   }
                 >
                   {date?.getDate()}
@@ -319,14 +435,20 @@ export default function Home() {
             {selectedDates.map(date => {
               const selections = getSelectionsForDate(date);
               const hasEntry = selections.length > 0;
+              const leaRequest = getLeaRequestForDate(date);
               return (
-                <div key={date} className={"border rounded-lg p-4 " + (hasEntry ? 'border-green-500 bg-green-50' : 'border-gray-200')}>
+                <div key={date} className={"border rounded-lg p-4 " + (hasEntry ? 'border-green-500 bg-green-50' : leaRequest ? 'border-pink-400 bg-pink-50' : 'border-gray-200')}>
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="md:w-1/4">
-                      <h3 className={"font-semibold text-lg " + (hasEntry ? 'text-green-800' : 'text-gray-800')}>
+                      <h3 className={"font-semibold text-lg " + (hasEntry ? 'text-green-800' : leaRequest ? 'text-pink-800' : 'text-gray-800')}>
                         {formatDateDisplay(date)}
                         {hasEntry && <span className="ml-2">✓</span>}
                       </h3>
+                      {leaRequest && (
+                        <p className="text-sm text-pink-600 font-medium mt-1">
+                          🙋 Lea: {leaRequest.helpType}
+                        </p>
+                      )}
                       {selections.length > 0 && (
                         <div className="mt-1">
                           {selections.map((s, i) => (
