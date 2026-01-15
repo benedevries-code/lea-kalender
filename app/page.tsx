@@ -3,9 +3,19 @@
 import { useState, useEffect } from 'react';
 import { FAMILY_MEMBERS } from '@/lib/types';
 
+interface BetreuungEntry {
+  date: string;
+  timeFrom: string;
+  timeTo: string;
+  message: string;
+  abholort?: string;
+  transport?: string;
+  name: string;
+}
 interface StoredData {
   dates: string[];
   leaRequests: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[];
+  betreuungEntries?: BetreuungEntry[];
 }
 
 export default function Home() {
@@ -20,6 +30,16 @@ export default function Home() {
   const [leaAbholort, setLeaAbholort] = useState('');
   const [leaTransport, setLeaTransport] = useState('');
   const [leaSubmitted, setLeaSubmitted] = useState(false);
+  // Betreuung durch Familie
+  const [betreuungEntries, setBetreuungEntries] = useState<BetreuungEntry[]>([]);
+  const [betreuungDate, setBetreuungDate] = useState('');
+  const [betreuungTimeFrom, setBetreuungTimeFrom] = useState('');
+  const [betreuungTimeTo, setBetreuungTimeTo] = useState('');
+  const [betreuungMessage, setBetreuungMessage] = useState('');
+  const [betreuungAbholort, setBetreuungAbholort] = useState('');
+  const [betreuungTransport, setBetreuungTransport] = useState('');
+  const [betreuungName, setBetreuungName] = useState('');
+  const [betreuungSubmitted, setBetreuungSubmitted] = useState(false);
 
   useEffect(() => {
     fetch('/api/data')
@@ -27,24 +47,57 @@ export default function Home() {
       .then((data: StoredData) => {
         setSelectedDates(data.dates || []);
         setLeaRequests([]); // Lea-Anfragen werden beim Laden gelöscht
+        setBetreuungEntries(data.betreuungEntries || []);
         setLoading(false);
         // Leere Anfragen auch in der Datenbank speichern
         fetch('/api/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dates: data.dates || [], leaRequests: [] }),
+          body: JSON.stringify({ dates: data.dates || [], leaRequests: [], betreuungEntries: data.betreuungEntries || [] }),
         });
       })
       .catch(() => setLoading(false));
   }, []);
 
-  const saveData = async (dates: string[], leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[]) => {
-    const data: StoredData = { dates, leaRequests: leaReqs };
+  const saveData = async (
+    dates: string[],
+    leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[],
+    betreuungEntriesParam?: BetreuungEntry[]
+  ) => {
+    const data: StoredData = { dates, leaRequests: leaReqs, betreuungEntries: betreuungEntriesParam ?? betreuungEntries };
     await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+  };
+  // Betreuungseintrag speichern
+  const submitBetreuungEntry = async () => {
+    if (!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo || !betreuungName) {
+      alert('Bitte alle Felder ausfüllen (Datum, Uhrzeit, Name)!');
+      return;
+    }
+    const newEntry: BetreuungEntry = {
+      date: betreuungDate,
+      timeFrom: betreuungTimeFrom,
+      timeTo: betreuungTimeTo,
+      message: betreuungMessage || '',
+      abholort: betreuungAbholort || '',
+      transport: betreuungTransport || '',
+      name: betreuungName
+    };
+    const updatedEntries = [...betreuungEntries, newEntry];
+    setBetreuungEntries(updatedEntries);
+    await saveData(selectedDates, leaRequests, updatedEntries);
+    setBetreuungSubmitted(true);
+    setBetreuungDate('');
+    setBetreuungTimeFrom('');
+    setBetreuungTimeTo('');
+    setBetreuungMessage('');
+    setBetreuungAbholort('');
+    setBetreuungTransport('');
+    setBetreuungName('');
+    setTimeout(() => setBetreuungSubmitted(false), 3000);
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -475,6 +528,152 @@ export default function Home() {
           <p className="mt-4 text-base text-gray-600">
             {selectedDates.length} Tag(e) ausgewaehlt
           </p>
+        )}
+      </div>
+
+      {/* Betreuung durch Familie - neues Feld */}
+      <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl shadow-xl p-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-3xl">👨‍👩‍👧‍👦</span>
+          <div>
+            <h2 className="text-xl font-bold text-blue-800">Familie übernimmt Betreuung</h2>
+            <p className="text-blue-700">Hier kann jeder eintragen, wenn er Bruno für einen Zeitraum nimmt (ohne Anfrage von Lea).</p>
+          </div>
+        </div>
+
+        {betreuungSubmitted && (
+          <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
+            <p className="text-blue-800 font-semibold">Gespeichert! Dein Eintrag wurde hinzugefügt.</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-blue-800 font-medium mb-2">Datum</label>
+            <input
+              type="date"
+              value={betreuungDate}
+              onChange={(e) => setBetreuungDate(e.target.value)}
+              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-blue-800 font-medium mb-2">Von</label>
+              <input
+                type="time"
+                value={betreuungTimeFrom}
+                onChange={(e) => setBetreuungTimeFrom(e.target.value)}
+                className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-blue-800 font-medium mb-2">Bis</label>
+              <input
+                type="time"
+                value={betreuungTimeTo}
+                onChange={(e) => setBetreuungTimeTo(e.target.value)}
+                className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-blue-800 font-medium mb-2">Abholort</label>
+            <input
+              type="text"
+              placeholder="z.B. Kita, Zuhause, bei Oma..."
+              value={betreuungAbholort}
+              onChange={(e) => setBetreuungAbholort(e.target.value)}
+              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-blue-800 font-medium mb-2">Transport</label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setBetreuungTransport('selbst_abholen')}
+                className={"px-4 py-3 rounded-lg font-medium transition-all " +
+                  (betreuungTransport === 'selbst_abholen'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50')
+                }
+              >
+                Ich hole Bruno ab
+              </button>
+              <button
+                type="button"
+                onClick={() => setBetreuungTransport('zurueckbringen')}
+                className={"px-4 py-3 rounded-lg font-medium transition-all " +
+                  (betreuungTransport === 'zurueckbringen'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50')
+                }
+              >
+                Bruno muss zurückgebracht werden
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-blue-800 font-medium mb-2">Nachricht (optional)</label>
+            <input
+              type="text"
+              placeholder="z.B. Wir gehen auf den Spielplatz..."
+              value={betreuungMessage}
+              onChange={(e) => setBetreuungMessage(e.target.value)}
+              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-blue-800 font-medium mb-2">Name</label>
+            <input
+              type="text"
+              placeholder="Wer übernimmt die Betreuung?"
+              value={betreuungName}
+              onChange={(e) => setBetreuungName(e.target.value)}
+              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={submitBetreuungEntry}
+            disabled={!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo || !betreuungName}
+            className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Betreuung eintragen
+          </button>
+        </div>
+
+        {/* Liste der Betreuungseinträge */}
+        {betreuungEntries.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-bold text-blue-800 mb-2">Geplante Betreuung durch Familie</h3>
+            <div className="space-y-3">
+              {betreuungEntries
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((entry, idx) => (
+                  <div key={idx} className="rounded-lg p-4 border-2 bg-blue-100 border-blue-400">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-blue-800">{formatDateDisplay(entry.date)}</h4>
+                        <p className="text-blue-700">Uhrzeit: {entry.timeFrom} - {entry.timeTo} Uhr</p>
+                        {entry.abholort && (
+                          <p className="text-blue-700">Abholort: {entry.abholort}</p>
+                        )}
+                        {entry.transport && (
+                          <p className="text-blue-700">
+                            {entry.transport === 'selbst_abholen' ? 'Ich hole Bruno ab' : 'Bruno muss zurückgebracht werden'}
+                          </p>
+                        )}
+                        {entry.message && (
+                          <p className="text-blue-600 text-sm mt-1">Nachricht: {entry.message}</p>
+                        )}
+                        <p className="text-blue-800 font-bold mt-1">👤 {entry.name}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
