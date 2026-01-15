@@ -67,15 +67,9 @@ export default function Home() {
       .then(res => res.json())
       .then((data: StoredData) => {
         setSelectedDates(data.dates || []);
-        setLeaRequests([]); // Lea-Anfragen werden beim Laden gelöscht
+        setLeaRequests(data.leaRequests || []);
         setBetreuungEntries(data.betreuungEntries || []);
         setLoading(false);
-        // Leere Anfragen auch in der Datenbank speichern
-        fetch('/api/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dates: data.dates || [], leaRequests: [], betreuungEntries: data.betreuungEntries || [] }),
-        });
       })
       .catch(() => setLoading(false));
   }, []);
