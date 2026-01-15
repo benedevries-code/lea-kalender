@@ -15,7 +15,7 @@ interface BetreuungEntry {
 }
 interface StoredData {
   dates: string[];
-  leaRequests: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[];
+  leaRequests: { date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string }[];
   betreuungEntries?: BetreuungEntry[];
 }
 
@@ -25,7 +25,7 @@ export default function Home() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [leaRequests, setLeaRequests] = useState<{date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[]>([]);
+  const [leaRequests, setLeaRequests] = useState<{ date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string }[]>([]);
   const [leaDate, setLeaDate] = useState('');
   const [leaTimeFrom, setLeaTimeFrom] = useState('');
   const [leaTimeTo, setLeaTimeTo] = useState('');
@@ -45,11 +45,20 @@ export default function Home() {
   const [betreuungSubmitted, setBetreuungSubmitted] = useState(false);
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('bruno_user') : null;
-    if (!stored) {
-      router.replace('/select-user');
-    } else {
+    if (typeof window === 'undefined') return;
+
+    // Check if user just came from select-user page
+    const justSelected = window.sessionStorage.getItem('bruno_just_selected');
+    const stored = window.localStorage.getItem('bruno_user');
+
+    if (justSelected && stored) {
+      // User just selected their name, allow access and clear the flag
+      window.sessionStorage.removeItem('bruno_just_selected');
       setUser(stored);
+    } else {
+      // Page was reloaded or accessed directly - ask who they are
+      window.localStorage.removeItem('bruno_user');
+      router.replace('/select-user');
     }
   }, [router]);
 
@@ -73,7 +82,7 @@ export default function Home() {
 
   const saveData = async (
     dates: string[],
-    leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[],
+    leaReqs: { date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string }[],
     betreuungEntriesParam?: BetreuungEntry[]
   ) => {
     const data: StoredData = { dates, leaRequests: leaReqs, betreuungEntries: betreuungEntriesParam ?? betreuungEntries };
@@ -223,7 +232,7 @@ export default function Home() {
 
   const days = getDaysInMonth(currentMonth);
   const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
-                      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

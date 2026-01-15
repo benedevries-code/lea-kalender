@@ -10,6 +10,7 @@ export default function SelectUser() {
   const handleSelect = () => {
     if (!selected) return;
     window.localStorage.setItem("bruno_user", selected);
+    window.sessionStorage.setItem("bruno_just_selected", "true");
     router.push("/");
   };
 
