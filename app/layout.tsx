@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Bruno & Lea - Unser Kalender',
-  description: 'Unser gemeinsamer Kalender für die ganze Familie.',
+  description: 'Unser gemeinsamer Kalender fÃ¼r die ganze Familie.',
 };
 
 export default function RootLayout({

@@ -17,7 +17,6 @@ export default function Home() {
   const [leaCustomMessages, setLeaCustomMessages] = useState<{[date: string]: string}>({});
   const [leaSubmitted, setLeaSubmitted] = useState(false);
 
-  // Laden der gespeicherten Daten von der API
   useEffect(() => {
     fetch('/api/data')
       .then(res => res.json())
@@ -29,7 +28,6 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Speichern bei Änderungen an die API
   const saveData = async (dates: string[], leaReqs: {date: string; helpType: string; helper?: string}[]) => {
     const data: StoredData = { dates, leaRequests: leaReqs };
     await fetch('/api/data', {
@@ -45,11 +43,9 @@ export default function Home() {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const days: (Date | null)[] = [];
-
     for (let i = 0; i < (firstDay.getDay() || 7) - 1; i++) {
       days.push(null);
     }
-
     for (let d = 1; d <= lastDay.getDate(); d++) {
       days.push(new Date(year, month, d));
     }
@@ -100,12 +96,10 @@ export default function Home() {
     return leaRequests.find(r => r.date === date);
   };
 
-  // Prüfen ob Lea für diesen Tag Hilfe braucht
   const leaNeedsHelpForDate = (dateStr: string) => {
     return leaRequests.some(r => r.date === dateStr);
   };
 
-  // Prüfen ob jemand für diesen Tag hilft
   const hasHelperForDate = (dateStr: string) => {
     return leaRequests.some(r => r.date === dateStr && r.helper);
   };
@@ -115,13 +109,11 @@ export default function Home() {
       alert('Bitte waehle mindestens eine Option fuer einen Tag.');
       return;
     }
-
     const newRequests = Object.entries(leaSelectedSlots).map(([date, helpType]) => ({
       date,
       helpType: helpType === 'custom' ? (leaCustomMessages[date] || 'Eigene Nachricht') : helpType
     })).filter(r => r.helpType);
 
-    // Alte Requests für diese Tage entfernen und neue hinzufügen
     const updatedRequests = [
       ...leaRequests.filter(r => !newRequests.some(nr => nr.date === r.date)),
       ...newRequests
@@ -132,22 +124,18 @@ export default function Home() {
     setLeaSubmitted(true);
     setLeaSelectedSlots({});
     setLeaCustomMessages({});
-
     setTimeout(() => setLeaSubmitted(false), 3000);
   };
 
-  // Helfer eintragen
   const toggleHelper = async (date: string, helperName: string) => {
     const request = leaRequests.find(r => r.date === date);
     if (!request) return;
 
     const updatedRequests = leaRequests.map(r => {
       if (r.date === date) {
-        // Wenn schon eingetragen, dann entfernen
         if (r.helper === helperName) {
           return { ...r, helper: undefined };
         }
-        // Sonst eintragen
         return { ...r, helper: helperName };
       }
       return r;
@@ -166,7 +154,6 @@ export default function Home() {
   const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
                       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-  // Sortierte Hilfe-Anfragen (nur zukünftige)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const sortedRequests = leaRequests
@@ -187,7 +174,6 @@ export default function Home() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Link teilen */}
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -203,10 +189,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bruno Kita Info */}
       <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl shadow-xl p-6">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-3xl"></span>
+          <span className="text-3xl">&#128054;</span>
           <div>
             <h2 className="text-xl font-bold text-amber-800">Bruno ist in der Kita</h2>
             <p className="text-amber-700 text-lg font-medium">Montag - Freitag: 8:00 - 13:00 Uhr</p>
@@ -214,21 +199,20 @@ export default function Home() {
         </div>
         <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span></span>
+            <span>&#9888;&#65039;</span>
             <span>Nur <strong>Katja</strong>, <strong>Maren</strong> und <strong>Mareike</strong> duerfen Bruno direkt aus der Kita abholen!</span>
           </p>
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span></span>
+            <span>&#128663;</span>
             <span>Bitte an den <strong>Kindersitz</strong> denken!</span>
           </p>
         </div>
       </div>
 
-      {/* LISTE: Wann braucht Lea Hilfe? */}
       {sortedRequests.length > 0 && (
         <div className="bg-green-100 border-2 border-green-400 rounded-2xl shadow-xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl"></span>
+            <span className="text-3xl">&#9995;</span>
             <div>
               <h2 className="text-xl font-bold text-green-800">Lea braucht Hilfe - Wer kann?</h2>
               <p className="text-green-700">Klicke auf deinen Namen um zu helfen</p>
@@ -241,9 +225,9 @@ export default function Home() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-lg text-green-800">{formatDateDisplay(request.date)}</h3>
-                    <p className="text-green-700"> {request.helpType}</p>
+                    <p className="text-green-700">&#128587; {request.helpType}</p>
                     {request.helper && (
-                      <p className="text-green-800 font-bold mt-1"> {request.helper} hilft!</p>
+                      <p className="text-green-800 font-bold mt-1">&#9989; {request.helper} hilft!</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -260,7 +244,7 @@ export default function Home() {
                           )
                         }
                       >
-                        {request.helper === name ? ' ' + name : name}
+                        {request.helper === name ? '&#10003; ' + name : name}
                       </button>
                     ))}
                   </div>
@@ -271,10 +255,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* LEA BEREICH */}
       <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl"></span>
+          <span className="text-3xl">&#128105;</span>
           <div>
             <h2 className="text-xl font-bold text-pink-800">Lea - Hilfe anfragen</h2>
             <p className="text-pink-700">Trage hier ein, wann du Unterstuetzung brauchst</p>
@@ -341,12 +324,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* Kalender für Datumsauswahl */}
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
         <p className="text-gray-600 text-sm mb-4">Klicke auf Tage, fuer die Bruno Betreuung braucht:</p>
 
-        {/* Legende */}
         <div className="flex flex-wrap gap-4 mb-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-primary"></div>
@@ -368,7 +349,7 @@ export default function Home() {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
               className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              
+              &#8592;
             </button>
             <span className="font-bold text-2xl">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -377,7 +358,7 @@ export default function Home() {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
               className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              
+              &#8594;
             </button>
           </div>
 
@@ -432,5 +413,3 @@ export default function Home() {
     </div>
   );
 }
- 
- 
