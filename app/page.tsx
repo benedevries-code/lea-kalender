@@ -249,7 +249,7 @@ export default function Home() {
         <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
           <p className="text-amber-800 font-medium flex items-center gap-2">
             <span>⚠️</span>
-            <span>Nur <strong>Katja</strong> und <strong>Maren</strong> duerfen Bruno direkt aus der Kita abholen!</span>
+            <span>Nur <strong>Katja</strong>, <strong>Maren</strong> und <strong>Mareike</strong> duerfen Bruno direkt aus der Kita abholen!</span>
           </p>
           <p className="text-amber-800 font-medium flex items-center gap-2">
             <span>🚗</span>
