@@ -1,24 +1,18 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Participant, TimeSlot, BRUNO_OPTIONS, LEA_HELP_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
+import { LEA_HELP_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
 
 interface StoredData {
   dates: string[];
-  participants: Participant[];
-  leaRequests: {date: string; helpType: string}[];
+  leaRequests: {date: string; helpType: string; helper?: string}[];
 }
 
 export default function Home() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [participantName, setParticipantName] = useState('');
-  const [selectedSlots, setSelectedSlots] = useState<{[date: string]: string}>({});
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [leaRequests, setLeaRequests] = useState<{date: string; helpType: string}[]>([]);
+  const [leaRequests, setLeaRequests] = useState<{date: string; helpType: string; helper?: string}[]>([]);
   const [leaSelectedSlots, setLeaSelectedSlots] = useState<{[date: string]: string}>({});
   const [leaCustomMessages, setLeaCustomMessages] = useState<{[date: string]: string}>({});
   const [leaSubmitted, setLeaSubmitted] = useState(false);
@@ -29,16 +23,15 @@ export default function Home() {
       .then(res => res.json())
       .then((data: StoredData) => {
         setSelectedDates(data.dates || []);
-        setParticipants(data.participants || []);
         setLeaRequests(data.leaRequests || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Speichern bei Änderungen an die API
-  const saveData = async (dates: string[], parts: Participant[], leaReqs: {date: string; helpType: string}[]) => {
-    const data: StoredData = { dates, participants: parts, leaRequests: leaReqs };
+  // Speichern bei �nderungen an die API
+  const saveData = async (dates: string[], leaReqs: {date: string; helpType: string; helper?: string}[]) => {
+    const data: StoredData = { dates, leaRequests: leaReqs };
     await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -88,19 +81,7 @@ export default function Home() {
       newDates = [...selectedDates, dateStr].sort();
     }
     setSelectedDates(newDates);
-    saveData(newDates, participants, leaRequests);
-  };
-
-  const selectOption = (date: string, option: string) => {
-    if (option === '') {
-      setSelectedSlots(prev => {
-        const newSlots = {...prev};
-        delete newSlots[date];
-        return newSlots;
-      });
-    } else {
-      setSelectedSlots(prev => ({...prev, [date]: option}));
-    }
+    saveData(newDates, leaRequests);
   };
 
   const selectLeaOption = (date: string, option: string) => {
@@ -115,60 +96,18 @@ export default function Home() {
     }
   };
 
-  const getSelectionsForDate = (date: string) => {
-    return participants.flatMap(p =>
-      p.availableSlots
-        .filter(s => s.date === date)
-        .map(s => ({name: p.name, option: s.option}))
-    );
-  };
-
   const getLeaRequestForDate = (date: string) => {
     return leaRequests.find(r => r.date === date);
   };
 
-  // Prüfen ob ein Tag bereits einen Eintrag hat
-  const hasEntryForDate = (dateStr: string) => {
-    return participants.some(p =>
-      p.availableSlots.some(s => s.date === dateStr)
-    );
-  };
-
-  // Prüfen ob Lea für diesen Tag Hilfe braucht
+  // Pr�fen ob Lea f�r diesen Tag Hilfe braucht
   const leaNeedsHelpForDate = (dateStr: string) => {
     return leaRequests.some(r => r.date === dateStr);
   };
 
-  const submitAvailability = async () => {
-    if (!participantName) {
-      alert('Bitte waehle deinen Namen.');
-      return;
-    }
-    if (Object.keys(selectedSlots).length === 0) {
-      alert('Bitte waehle mindestens eine Option fuer einen Tag.');
-      return;
-    }
-
-    const slots: TimeSlot[] = Object.entries(selectedSlots).map(([date, option]) => ({
-      date,
-      option
-    }));
-
-    const participant: Participant = {
-      id: uuidv4(),
-      name: participantName,
-      availableSlots: slots,
-      createdAt: new Date().toISOString(),
-    };
-
-    const newParticipants = [...participants, participant];
-    setParticipants(newParticipants);
-    await saveData(selectedDates, newParticipants, leaRequests);
-    setSubmitted(true);
-    setParticipantName('');
-    setSelectedSlots({});
-
-    setTimeout(() => setSubmitted(false), 3000);
+  // Pr�fen ob jemand f�r diesen Tag hilft
+  const hasHelperForDate = (dateStr: string) => {
+    return leaRequests.some(r => r.date === dateStr && r.helper);
   };
 
   const submitLeaRequest = async () => {
@@ -182,19 +121,40 @@ export default function Home() {
       helpType: helpType === 'custom' ? (leaCustomMessages[date] || 'Eigene Nachricht') : helpType
     })).filter(r => r.helpType);
 
-    // Alte Requests für diese Tage entfernen und neue hinzufügen
+    // Alte Requests f�r diese Tage entfernen und neue hinzuf�gen
     const updatedRequests = [
       ...leaRequests.filter(r => !newRequests.some(nr => nr.date === r.date)),
       ...newRequests
     ];
 
     setLeaRequests(updatedRequests);
-    await saveData(selectedDates, participants, updatedRequests);
+    await saveData(selectedDates, updatedRequests);
     setLeaSubmitted(true);
     setLeaSelectedSlots({});
     setLeaCustomMessages({});
 
     setTimeout(() => setLeaSubmitted(false), 3000);
+  };
+
+  // Helfer eintragen
+  const toggleHelper = async (date: string, helperName: string) => {
+    const request = leaRequests.find(r => r.date === date);
+    if (!request) return;
+
+    const updatedRequests = leaRequests.map(r => {
+      if (r.date === date) {
+        // Wenn schon eingetragen, dann entfernen
+        if (r.helper === helperName) {
+          return { ...r, helper: undefined };
+        }
+        // Sonst eintragen
+        return { ...r, helper: helperName };
+      }
+      return r;
+    });
+
+    setLeaRequests(updatedRequests);
+    await saveData(selectedDates, updatedRequests);
   };
 
   const copyLink = () => {
@@ -205,6 +165,17 @@ export default function Home() {
   const days = getDaysInMonth(currentMonth);
   const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
                       'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+  // Sortierte Hilfe-Anfragen (nur zuk�nftige)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const sortedRequests = leaRequests
+    .filter(r => {
+      const parts = r.date.split('-');
+      const reqDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return reqDate >= today;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   if (loading) {
     return (
@@ -230,17 +201,12 @@ export default function Home() {
             Link kopieren
           </button>
         </div>
-        {participants.length > 0 && (
-          <p className="mt-4 text-sm text-gray-600">
-            <span className="font-semibold text-primary">{participants.length}</span> Person(en) haben eingetragen: {participants.map(p => p.name).join(', ')}
-          </p>
-        )}
       </div>
 
       {/* Bruno Kita Info */}
       <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl shadow-xl p-6">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-3xl">🐕</span>
+          <span className="text-3xl"></span>
           <div>
             <h2 className="text-xl font-bold text-amber-800">Bruno ist in der Kita</h2>
             <p className="text-amber-700 text-lg font-medium">Montag - Freitag: 8:00 - 13:00 Uhr</p>
@@ -248,20 +214,67 @@ export default function Home() {
         </div>
         <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span>⚠️</span>
+            <span></span>
             <span>Nur <strong>Katja</strong>, <strong>Maren</strong> und <strong>Mareike</strong> duerfen Bruno direkt aus der Kita abholen!</span>
           </p>
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span>🚗</span>
+            <span></span>
             <span>Bitte an den <strong>Kindersitz</strong> denken!</span>
           </p>
         </div>
       </div>
 
+      {/* LISTE: Wann braucht Lea Hilfe? */}
+      {sortedRequests.length > 0 && (
+        <div className="bg-green-100 border-2 border-green-400 rounded-2xl shadow-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl"></span>
+            <div>
+              <h2 className="text-xl font-bold text-green-800">Lea braucht Hilfe - Wer kann?</h2>
+              <p className="text-green-700">Klicke auf deinen Namen um zu helfen</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {sortedRequests.map(request => (
+              <div key={request.date} className={"rounded-lg p-4 border-2 " + (request.helper ? 'bg-green-200 border-green-500' : 'bg-white border-green-300')}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-lg text-green-800">{formatDateDisplay(request.date)}</h3>
+                    <p className="text-green-700"> {request.helpType}</p>
+                    {request.helper && (
+                      <p className="text-green-800 font-bold mt-1"> {request.helper} hilft!</p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {FAMILY_MEMBERS.map(name => (
+                      <button
+                        key={name}
+                        onClick={() => toggleHelper(request.date, name)}
+                        className={"px-4 py-2 rounded-lg font-medium transition-all " +
+                          (request.helper === name
+                            ? 'bg-green-600 text-white'
+                            : request.helper
+                              ? 'bg-gray-200 text-gray-500'
+                              : 'bg-white border-2 border-green-400 text-green-700 hover:bg-green-50'
+                          )
+                        }
+                      >
+                        {request.helper === name ? ' ' + name : name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* LEA BEREICH */}
       <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl">👩</span>
+          <span className="text-3xl"></span>
           <div>
             <h2 className="text-xl font-bold text-pink-800">Lea - Hilfe anfragen</h2>
             <p className="text-pink-700">Trage hier ein, wann du Unterstuetzung brauchst</p>
@@ -328,22 +341,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Name auswählen */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Dein Name</h2>
-        <select
-          value={participantName}
-          onChange={(e) => setParticipantName(e.target.value)}
-          className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-        >
-          <option value="">-- Bitte waehlen --</option>
-          {FAMILY_MEMBERS.map(name => (
-            <option key={name} value={name}>{name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Kalender für Datumsauswahl - GRÖSSER */}
+      {/* Kalender f�r Datumsauswahl */}
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Tage auswaehlen</h2>
         <p className="text-gray-600 text-sm mb-4">Klicke auf Tage, fuer die Bruno Betreuung braucht:</p>
@@ -352,11 +350,11 @@ export default function Home() {
         <div className="flex flex-wrap gap-4 mb-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-primary"></div>
-            <span>Betreuung gesucht</span>
+            <span>Ausgewaehlt</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-green-500"></div>
-            <span>Jemand kuemmert sich</span>
+            <span>Jemand hilft</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-pink-500"></div>
@@ -370,7 +368,7 @@ export default function Home() {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
               className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              ←
+              
             </button>
             <span className="font-bold text-2xl">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -379,7 +377,7 @@ export default function Home() {
               onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
               className="p-3 hover:bg-gray-100 rounded-lg text-2xl font-bold"
             >
-              →
+              
             </button>
           </div>
 
@@ -393,12 +391,12 @@ export default function Home() {
 
           <div className="grid grid-cols-7 gap-2">
             {days.map((date, i) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const isPast = date ? date < today : false;
+              const todayDate = new Date();
+              todayDate.setHours(0, 0, 0, 0);
+              const isPast = date ? date < todayDate : false;
               const dateStr = date ? formatDate(date) : '';
               const isSelected = date ? selectedDates.includes(dateStr) : false;
-              const hasEntry = date ? hasEntryForDate(dateStr) : false;
+              const hasHelper = date ? hasHelperForDate(dateStr) : false;
               const leaNeedsHelp = date ? leaNeedsHelpForDate(dateStr) : false;
 
               return (
@@ -409,7 +407,7 @@ export default function Home() {
                   className={"py-4 rounded-xl text-lg font-semibold transition-all " +
                     (!date ? 'invisible ' : '') +
                     (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
-                    (hasEntry
+                    (hasHelper
                       ? 'bg-green-500 text-white ring-2 ring-green-600 '
                       : leaNeedsHelp
                         ? 'bg-pink-500 text-white ring-2 ring-pink-600 '
@@ -431,85 +429,6 @@ export default function Home() {
           </p>
         )}
       </div>
-
-      {/* Verfügbarkeit eintragen */}
-      {selectedDates.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Deine Verfuegbarkeit eintragen</h2>
-
-          {submitted && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <p className="text-green-800 font-semibold">Eingetragen! Deine Auswahl wurde gespeichert.</p>
-            </div>
-          )}
-
-          <p className="text-gray-600 mb-4">Waehle fuer jeden Tag, wie du Bruno nehmen kannst:</p>
-
-          <div className="space-y-4">
-            {selectedDates.map(date => {
-              const selections = getSelectionsForDate(date);
-              const hasEntry = selections.length > 0;
-              const leaRequest = getLeaRequestForDate(date);
-              return (
-                <div key={date} className={"border rounded-lg p-4 " + (hasEntry ? 'border-green-500 bg-green-50' : leaRequest ? 'border-pink-400 bg-pink-50' : 'border-gray-200')}>
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="md:w-1/4">
-                      <h3 className={"font-semibold text-lg " + (hasEntry ? 'text-green-800' : leaRequest ? 'text-pink-800' : 'text-gray-800')}>
-                        {formatDateDisplay(date)}
-                        {hasEntry && <span className="ml-2">✓</span>}
-                      </h3>
-                      {leaRequest && (
-                        <p className="text-sm text-pink-600 font-medium mt-1">
-                          🙋 Lea: {leaRequest.helpType}
-                        </p>
-                      )}
-                      {selections.length > 0 && (
-                        <div className="mt-1">
-                          {selections.map((s, i) => (
-                            <p key={i} className="text-sm text-green-700 font-medium">
-                              {s.name}: {s.option}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="md:w-3/4">
-                      <select
-                        value={selectedSlots[date] || ''}
-                        onChange={(e) => selectOption(date, e.target.value)}
-                        className={
-                          "w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent " +
-                          (selectedSlots[date] ? 'border-primary bg-primary/5' : 'border-gray-300')
-                        }
-                      >
-                        <option value="">-- Option waehlen --</option>
-                        {BRUNO_OPTIONS.map(option => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-600">
-                {Object.keys(selectedSlots).length} von {selectedDates.length} Tagen ausgewaehlt
-              </span>
-            </div>
-            <button
-              onClick={submitAvailability}
-              disabled={!participantName || Object.keys(selectedSlots).length === 0}
-              className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Eintragen
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
