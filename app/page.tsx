@@ -267,7 +267,7 @@ export default function Home() {
                           )
                         }
                       >
-                        {request.helper === name ? '&#10003; ' + name : name}
+                        {request.helper === name ? '\u2713 ' + name : name}
                       </button>
                     ))}
                   </div>
