@@ -397,7 +397,7 @@ export default function Home() {
                     (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
                     (hasEntry
                       ? 'bg-green-500 text-white ring-2 ring-green-600 '
-                      : leaNeedsHelp && isSelected
+                      : leaNeedsHelp
                         ? 'bg-pink-500 text-white ring-2 ring-pink-600 '
                         : isSelected
                           ? 'bg-primary text-white '
