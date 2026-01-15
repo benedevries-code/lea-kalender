@@ -20,6 +20,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [leaRequests, setLeaRequests] = useState<{date: string; helpType: string}[]>([]);
   const [leaSelectedSlots, setLeaSelectedSlots] = useState<{[date: string]: string}>({});
+  const [leaCustomMessages, setLeaCustomMessages] = useState<{[date: string]: string}>({});
   const [leaSubmitted, setLeaSubmitted] = useState(false);
 
   // Laden der gespeicherten Daten von der API
@@ -178,8 +179,8 @@ export default function Home() {
 
     const newRequests = Object.entries(leaSelectedSlots).map(([date, helpType]) => ({
       date,
-      helpType
-    }));
+      helpType: helpType === 'custom' ? (leaCustomMessages[date] || 'Eigene Nachricht') : helpType
+    })).filter(r => r.helpType);
 
     // Alte Requests für diese Tage entfernen und neue hinzufügen
     const updatedRequests = [
@@ -191,6 +192,7 @@ export default function Home() {
     await saveData(selectedDates, participants, updatedRequests);
     setLeaSubmitted(true);
     setLeaSelectedSlots({});
+    setLeaCustomMessages({});
 
     setTimeout(() => setLeaSubmitted(false), 3000);
   };
@@ -303,7 +305,8 @@ export default function Home() {
                         <input
                           type="text"
                           placeholder="Schreibe hier deine Nachricht..."
-                          onBlur={(e) => { if (e.target.value) selectLeaOption(date, e.target.value); }}
+                          value={leaCustomMessages[date] || ''}
+                          onChange={(e) => setLeaCustomMessages(prev => ({...prev, [date]: e.target.value}))}
                           className="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                         />
                       </div>
