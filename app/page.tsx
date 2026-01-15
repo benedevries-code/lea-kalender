@@ -45,6 +45,10 @@ export default function Home() {
   const [betreuungSubmitted, setBetreuungSubmitted] = useState(false);
 
   useEffect(() => {
+    // Immer Name abfragen, auch bei Reload
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('bruno_user');
+    }
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('bruno_user') : null;
     if (!stored) {
       router.replace('/select-user');
