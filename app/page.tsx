@@ -5,18 +5,20 @@ import { FAMILY_MEMBERS } from '@/lib/types';
 
 interface StoredData {
   dates: string[];
-  leaRequests: {date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[];
+  leaRequests: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[];
 }
 
 export default function Home() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [leaRequests, setLeaRequests] = useState<{date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[]>([]);
+  const [leaRequests, setLeaRequests] = useState<{date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[]>([]);
   const [leaDate, setLeaDate] = useState('');
   const [leaTimeFrom, setLeaTimeFrom] = useState('');
   const [leaTimeTo, setLeaTimeTo] = useState('');
   const [leaMessage, setLeaMessage] = useState('');
+  const [leaAbholort, setLeaAbholort] = useState('');
+  const [leaTransport, setLeaTransport] = useState('');
   const [leaSubmitted, setLeaSubmitted] = useState(false);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  const saveData = async (dates: string[], leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[]) => {
+  const saveData = async (dates: string[], leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string}[]) => {
     const data: StoredData = { dates, leaRequests: leaReqs };
     await fetch('/api/data', {
       method: 'POST',
@@ -103,7 +105,9 @@ export default function Home() {
       date: leaDate,
       timeFrom: leaTimeFrom,
       timeTo: leaTimeTo,
-      message: leaMessage || ''
+      message: leaMessage || '',
+      abholort: leaAbholort || '',
+      transport: leaTransport || ''
     };
 
     const updatedRequests = [
@@ -118,6 +122,8 @@ export default function Home() {
     setLeaTimeFrom('');
     setLeaTimeTo('');
     setLeaMessage('');
+    setLeaAbholort('');
+    setLeaTransport('');
     setTimeout(() => setLeaSubmitted(false), 3000);
   };
 
@@ -193,11 +199,11 @@ export default function Home() {
         </div>
         <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span>&#9888;&#65039;</span>
+            <span className="text-xl">!</span>
             <span>Nur <strong>Katja</strong>, <strong>Maren</strong> und <strong>Mareike</strong> duerfen Bruno direkt aus der Kita abholen!</span>
           </p>
           <p className="text-amber-800 font-medium flex items-center gap-2">
-            <span>&#128663;</span>
+            <span className="text-xl">*</span>
             <span>Bitte an den <strong>Kindersitz</strong> denken!</span>
           </p>
         </div>
@@ -231,9 +237,17 @@ export default function Home() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-lg text-green-800">{formatDateDisplay(request.date)}</h3>
-                    <p className="text-green-700">&#128337; {request.timeFrom} - {request.timeTo} Uhr</p>
+                    <p className="text-green-700">Uhrzeit: {request.timeFrom} - {request.timeTo} Uhr</p>
+                    {request.abholort && (
+                      <p className="text-green-700">Abholort: {request.abholort}</p>
+                    )}
+                    {request.transport && (
+                      <p className="text-green-700">
+                        {request.transport === 'lea_holt_ab' ? 'Lea holt Bruno ab' : 'Bruno muss zurueckgebracht werden'}
+                      </p>
+                    )}
                     {request.message && (
-                      <p className="text-green-600 text-sm mt-1">&#128172; {request.message}</p>
+                      <p className="text-green-600 text-sm mt-1">Nachricht: {request.message}</p>
                     )}
                     {request.helper && (
                       <p className="text-green-800 font-bold mt-1">&#9989; {request.helper} hilft!</p>
@@ -312,6 +326,45 @@ export default function Home() {
           </div>
           
           <div>
+            <label className="block text-pink-800 font-medium mb-2">Abholort</label>
+            <input
+              type="text"
+              placeholder="z.B. Kita, Zuhause, bei Oma..."
+              value={leaAbholort}
+              onChange={(e) => setLeaAbholort(e.target.value)}
+              className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-pink-800 font-medium mb-2">Transport</label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setLeaTransport('lea_holt_ab')}
+                className={"px-4 py-3 rounded-lg font-medium transition-all " +
+                  (leaTransport === 'lea_holt_ab'
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
+                }
+              >
+                Lea holt Bruno ab
+              </button>
+              <button
+                type="button"
+                onClick={() => setLeaTransport('zurueckbringen')}
+                className={"px-4 py-3 rounded-lg font-medium transition-all " +
+                  (leaTransport === 'zurueckbringen'
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
+                }
+              >
+                Bruno muss zurueckgebracht werden
+              </button>
+            </div>
+          </div>
+
+          <div>
             <label className="block text-pink-800 font-medium mb-2">Nachricht (optional)</label>
             <input
               type="text"
@@ -321,7 +374,7 @@ export default function Home() {
               className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
             />
           </div>
-          
+
           <button
             onClick={submitLeaRequest}
             disabled={!leaDate || !leaTimeFrom || !leaTimeTo}
