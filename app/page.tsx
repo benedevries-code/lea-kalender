@@ -363,110 +363,111 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
 
-            {user === 'Lea' && (
-              <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl">&#128105;</span>
-                  <div>
-                    <h2 className="text-xl font-bold text-pink-800">Lea - Hilfe anfragen</h2>
-                    <p className="text-pink-700">Trage hier ein, wann du Unterstuetzung brauchst</p>
-                  </div>
-                </div>
+      {/* Lea Hilfe-Formular - nur für Lea sichtbar */}
+      {user === 'Lea' && (
+        <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl">&#128105;</span>
+            <div>
+              <h2 className="text-xl font-bold text-pink-800">Lea - Hilfe anfragen</h2>
+              <p className="text-pink-700">Trage hier ein, wann du Unterstuetzung brauchst</p>
+            </div>
+          </div>
 
-                {leaSubmitted && (
-                  <div className="bg-pink-200 border border-pink-400 rounded-lg p-4 mb-4">
-                    <p className="text-pink-800 font-semibold">Gespeichert! Deine Anfrage wurde eingetragen.</p>
-                  </div>
-                )}
+          {leaSubmitted && (
+            <div className="bg-pink-200 border border-pink-400 rounded-lg p-4 mb-4">
+              <p className="text-pink-800 font-semibold">Gespeichert! Deine Anfrage wurde eingetragen.</p>
+            </div>
+          )}
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-pink-800 font-medium mb-2">Datum</label>
-                    <input
-                      type="date"
-                      value={leaDate}
-                      onChange={(e) => setLeaDate(e.target.value)}
-                      className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-pink-800 font-medium mb-2">Von</label>
-                      <input
-                        type="time"
-                        value={leaTimeFrom}
-                        onChange={(e) => setLeaTimeFrom(e.target.value)}
-                        className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-pink-800 font-medium mb-2">Bis</label>
-                      <input
-                        type="time"
-                        value={leaTimeTo}
-                        onChange={(e) => setLeaTimeTo(e.target.value)}
-                        className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-pink-800 font-medium mb-2">Abholort</label>
-                    <input
-                      type="text"
-                      placeholder="z.B. Kita, Zuhause, bei Oma..."
-                      value={leaAbholort}
-                      onChange={(e) => setLeaAbholort(e.target.value)}
-                      className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-pink-800 font-medium mb-2">Transport</label>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setLeaTransport('lea_holt_ab')}
-                        className={"px-4 py-3 rounded-xl font-medium shadow-sm transition-all " +
-                          (leaTransport === 'lea_holt_ab'
-                            ? 'bg-pink-500 text-white'
-                            : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
-                        }
-                      >
-                        Lea holt Bruno ab
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLeaTransport('zurueckbringen')}
-                        className={"px-4 py-3 rounded-xl font-medium shadow-sm transition-all " +
-                          (leaTransport === 'zurueckbringen'
-                            ? 'bg-pink-500 text-white'
-                            : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
-                        }
-                      >
-                        Bruno muss zurueckgebracht werden
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-pink-800 font-medium mb-2">Nachricht (optional)</label>
-                    <input
-                      type="text"
-                      placeholder="z.B. Bruno muss zum Tierarzt..."
-                      value={leaMessage}
-                      onChange={(e) => setLeaMessage(e.target.value)}
-                      className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                    />
-                  </div>
-                  <button
-                    onClick={submitLeaRequest}
-                    disabled={!leaDate || !leaTimeFrom || !leaTimeTo}
-                    className="w-full py-3 bg-pink-500 text-white font-semibold rounded-xl shadow hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Hilfe-Anfrage speichern
-                  </button>
-                </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Datum</label>
+              <input
+                type="date"
+                value={leaDate}
+                onChange={(e) => setLeaDate(e.target.value)}
+                className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-pink-800 font-medium mb-2">Von</label>
+                <input
+                  type="time"
+                  value={leaTimeFrom}
+                  onChange={(e) => setLeaTimeFrom(e.target.value)}
+                  className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                />
               </div>
-            )}
+              <div>
+                <label className="block text-pink-800 font-medium mb-2">Bis</label>
+                <input
+                  type="time"
+                  value={leaTimeTo}
+                  onChange={(e) => setLeaTimeTo(e.target.value)}
+                  className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Abholort</label>
+              <input
+                type="text"
+                placeholder="z.B. Kita, Zuhause, bei Oma..."
+                value={leaAbholort}
+                onChange={(e) => setLeaAbholort(e.target.value)}
+                className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Transport</label>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLeaTransport('lea_holt_ab')}
+                  className={"px-4 py-3 rounded-xl font-medium shadow-sm transition-all " +
+                    (leaTransport === 'lea_holt_ab'
+                      ? 'bg-pink-500 text-white'
+                      : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
+                  }
+                >
+                  Lea holt Bruno ab
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeaTransport('zurueckbringen')}
+                  className={"px-4 py-3 rounded-xl font-medium shadow-sm transition-all " +
+                    (leaTransport === 'zurueckbringen'
+                      ? 'bg-pink-500 text-white'
+                      : 'bg-white border-2 border-pink-300 text-pink-700 hover:bg-pink-50')
+                  }
+                >
+                  Bruno muss zurueckgebracht werden
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Nachricht (optional)</label>
+              <input
+                type="text"
+                placeholder="z.B. Bruno muss zum Tierarzt..."
+                value={leaMessage}
+                onChange={(e) => setLeaMessage(e.target.value)}
+                className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={submitLeaRequest}
+              disabled={!leaDate || !leaTimeFrom || !leaTimeTo}
+              className="w-full py-3 bg-pink-500 text-white font-semibold rounded-xl shadow hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Hilfe-Anfrage speichern
+            </button>
           </div>
         </div>
       )}
