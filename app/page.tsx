@@ -529,6 +529,39 @@ export default function Home() {
             {selectedDates.length} Tag(e) ausgewaehlt
           </p>
         )}
+
+        {/* Betreuung durch Familie - Liste direkt nach Kalenderübersicht */}
+        {betreuungEntries.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-bold text-blue-800 mb-2">Geplante Betreuung durch Familie</h3>
+            <div className="space-y-3">
+              {betreuungEntries
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((entry, idx) => (
+                  <div key={idx} className="rounded-lg p-4 border-2 bg-blue-100 border-blue-400">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-blue-800">{formatDateDisplay(entry.date)}</h4>
+                        <p className="text-blue-700">Uhrzeit: {entry.timeFrom} - {entry.timeTo} Uhr</p>
+                        {entry.abholort && (
+                          <p className="text-blue-700">Abholort: {entry.abholort}</p>
+                        )}
+                        {entry.transport && (
+                          <p className="text-blue-700">
+                            {entry.transport === 'selbst_abholen' ? 'Ich hole Bruno ab' : 'Bruno muss zurückgebracht werden'}
+                          </p>
+                        )}
+                        {entry.message && (
+                          <p className="text-blue-600 text-sm mt-1">Nachricht: {entry.message}</p>
+                        )}
+                        <p className="text-blue-800 font-bold mt-1">👤 {entry.name}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Betreuung durch Familie - neues Feld */}
@@ -625,14 +658,17 @@ export default function Home() {
             />
           </div>
           <div>
-            <label className="block text-blue-800 font-medium mb-2">Name</label>
-            <input
-              type="text"
-              placeholder="Wer übernimmt die Betreuung?"
+            <label className="block text-blue-800 font-medium mb-2">Wer übernimmt die Betreuung?</label>
+            <select
               value={betreuungName}
-              onChange={(e) => setBetreuungName(e.target.value)}
+              onChange={e => setBetreuungName(e.target.value)}
               className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            />
+            >
+              <option value="">Bitte auswählen</option>
+              {FAMILY_MEMBERS.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
           </div>
           <button
             onClick={submitBetreuungEntry}
