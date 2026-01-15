@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import DarkModeToggle from '@/components/DarkModeToggle';
@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Bruno & Lea - Unser Kalender',
-  description: 'Unser gemeinsamer Kalender für die ganze Familie.',
+  description: 'Unser gemeinsamer Kalender f�r die ganze Familie.',
 };
 
 export default function RootLayout({
@@ -29,11 +29,11 @@ export default function RootLayout({
             {children}
           </main>
           <footer className='text-center py-6 text-gray-500 text-sm'>
-            <p className='mb-1'>Bruno & Lea  2026</p>
-            <p>Kathja, Maren, Noah & Mareike, Volker, Lukas & Mandy</p>
+            <p>Bruno & Lea 2026</p>
           </footer>
         </div>
       </body>
     </html>
   );
 }
+
