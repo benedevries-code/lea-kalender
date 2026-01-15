@@ -1,20 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LEA_HELP_OPTIONS, FAMILY_MEMBERS } from '@/lib/types';
+import { FAMILY_MEMBERS } from '@/lib/types';
 
 interface StoredData {
   dates: string[];
-  leaRequests: {date: string; helpType: string; helper?: string}[];
+  leaRequests: {date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[];
 }
 
 export default function Home() {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [leaRequests, setLeaRequests] = useState<{date: string; helpType: string; helper?: string}[]>([]);
-  const [leaSelectedSlots, setLeaSelectedSlots] = useState<{[date: string]: string}>({});
-  const [leaCustomMessages, setLeaCustomMessages] = useState<{[date: string]: string}>({});
+  const [leaRequests, setLeaRequests] = useState<{date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[]>([]);
+  const [leaDate, setLeaDate] = useState('');
+  const [leaTimeFrom, setLeaTimeFrom] = useState('');
+  const [leaTimeTo, setLeaTimeTo] = useState('');
+  const [leaMessage, setLeaMessage] = useState('');
   const [leaSubmitted, setLeaSubmitted] = useState(false);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  const saveData = async (dates: string[], leaReqs: {date: string; helpType: string; helper?: string}[]) => {
+  const saveData = async (dates: string[], leaReqs: {date: string; timeFrom: string; timeTo: string; message: string; helper?: string}[]) => {
     const data: StoredData = { dates, leaRequests: leaReqs };
     await fetch('/api/data', {
       method: 'POST',
@@ -80,18 +82,6 @@ export default function Home() {
     saveData(newDates, leaRequests);
   };
 
-  const selectLeaOption = (date: string, option: string) => {
-    if (option === '') {
-      setLeaSelectedSlots(prev => {
-        const newSlots = {...prev};
-        delete newSlots[date];
-        return newSlots;
-      });
-    } else {
-      setLeaSelectedSlots(prev => ({...prev, [date]: option}));
-    }
-  };
-
   const getLeaRequestForDate = (date: string) => {
     return leaRequests.find(r => r.date === date);
   };
@@ -105,25 +95,29 @@ export default function Home() {
   };
 
   const submitLeaRequest = async () => {
-    if (Object.keys(leaSelectedSlots).length === 0) {
-      alert('Bitte waehle mindestens eine Option fuer einen Tag.');
+    if (!leaDate || !leaTimeFrom || !leaTimeTo) {
+      alert('Bitte waehle Datum und Uhrzeiten aus.');
       return;
     }
-    const newRequests = Object.entries(leaSelectedSlots).map(([date, helpType]) => ({
-      date,
-      helpType: helpType === 'custom' ? (leaCustomMessages[date] || 'Eigene Nachricht') : helpType
-    })).filter(r => r.helpType);
+    const newRequest = {
+      date: leaDate,
+      timeFrom: leaTimeFrom,
+      timeTo: leaTimeTo,
+      message: leaMessage || ''
+    };
 
     const updatedRequests = [
-      ...leaRequests.filter(r => !newRequests.some(nr => nr.date === r.date)),
-      ...newRequests
+      ...leaRequests.filter(r => r.date !== leaDate),
+      newRequest
     ];
 
     setLeaRequests(updatedRequests);
     await saveData(selectedDates, updatedRequests);
     setLeaSubmitted(true);
-    setLeaSelectedSlots({});
-    setLeaCustomMessages({});
+    setLeaDate('');
+    setLeaTimeFrom('');
+    setLeaTimeTo('');
+    setLeaMessage('');
     setTimeout(() => setLeaSubmitted(false), 3000);
   };
 
@@ -225,7 +219,10 @@ export default function Home() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-lg text-green-800">{formatDateDisplay(request.date)}</h3>
-                    <p className="text-green-700">&#128587; {request.helpType}</p>
+                    <p className="text-green-700">&#128337; {request.timeFrom} - {request.timeTo} Uhr</p>
+                    {request.message && (
+                      <p className="text-green-600 text-sm mt-1">&#128172; {request.message}</p>
+                    )}
                     {request.helper && (
                       <p className="text-green-800 font-bold mt-1">&#9989; {request.helper} hilft!</p>
                     )}
@@ -270,58 +267,57 @@ export default function Home() {
           </div>
         )}
 
-        {selectedDates.length > 0 ? (
-          <div className="space-y-3">
-            {selectedDates.map(date => {
-              const existingRequest = getLeaRequestForDate(date);
-              return (
-                <div key={date} className="bg-white rounded-lg p-4 border border-pink-200">
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <h3 className="font-semibold text-pink-800">{formatDateDisplay(date)}</h3>
-                      {existingRequest && (
-                        <p className="text-sm text-pink-600">Aktuell: {existingRequest.helpType}</p>
-                      )}
-                    </div>
-                    <div>
-                      <select
-                        value={leaSelectedSlots[date] || ''}
-                        onChange={(e) => selectLeaOption(date, e.target.value)}
-                        className="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                      >
-                        <option value="">-- Was brauchst du? --</option>
-                        {LEA_HELP_OPTIONS.map(option => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                        <option value="custom">Eigene Nachricht schreiben...</option>
-                      </select>
-                    </div>
-                    {leaSelectedSlots[date] === 'custom' && (
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Schreibe hier deine Nachricht..."
-                          value={leaCustomMessages[date] || ''}
-                          onChange={(e) => setLeaCustomMessages(prev => ({...prev, [date]: e.target.value}))}
-                          className="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <button
-              onClick={submitLeaRequest}
-              disabled={Object.keys(leaSelectedSlots).length === 0}
-              className="w-full py-3 bg-pink-500 text-white font-semibold rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Hilfe-Anfrage speichern
-            </button>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-pink-800 font-medium mb-2">Datum</label>
+            <input
+              type="date"
+              value={leaDate}
+              onChange={(e) => setLeaDate(e.target.value)}
+              className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            />
           </div>
-        ) : (
-          <p className="text-pink-700">Waehle zuerst Tage im Kalender aus.</p>
-        )}
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Von</label>
+              <input
+                type="time"
+                value={leaTimeFrom}
+                onChange={(e) => setLeaTimeFrom(e.target.value)}
+                className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-pink-800 font-medium mb-2">Bis</label>
+              <input
+                type="time"
+                value={leaTimeTo}
+                onChange={(e) => setLeaTimeTo(e.target.value)}
+                className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-pink-800 font-medium mb-2">Nachricht (optional)</label>
+            <input
+              type="text"
+              placeholder="z.B. Bruno muss zum Tierarzt..."
+              value={leaMessage}
+              onChange={(e) => setLeaMessage(e.target.value)}
+              className="w-full px-4 py-3 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            />
+          </div>
+          
+          <button
+            onClick={submitLeaRequest}
+            disabled={!leaDate || !leaTimeFrom || !leaTimeTo}
+            className="w-full py-3 bg-pink-500 text-white font-semibold rounded-lg hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Hilfe-Anfrage speichern
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl p-8">
