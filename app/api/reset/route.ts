@@ -1,14 +1,22 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
 const DATA_KEY = 'bruno-kalender-data';
 
+// Check if Redis is configured
+const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const hasRedis = redisUrl && redisToken;
+
+const redis = hasRedis ? new Redis({
+  url: redisUrl!,
+  token: redisToken!,
+}) : null;
+
 export async function DELETE() {
+  if (!redis) {
+    return NextResponse.json({ success: true, message: 'Lokal - keine Aktion' });
+  }
   try {
     await redis.set(DATA_KEY, JSON.stringify({ dates: [], leaRequests: [], betreuungEntries: [] }));
     return NextResponse.json({ success: true, message: 'Daten geloescht' });
@@ -20,6 +28,9 @@ export async function DELETE() {
 
 // Automatisch leeren beim ersten GET nach Deployment
 export async function GET() {
+  if (!redis) {
+    return NextResponse.json({ success: true, message: 'Lokal - keine Aktion' });
+  }
   try {
     await redis.set(DATA_KEY, JSON.stringify({ dates: [], leaRequests: [], betreuungEntries: [] }));
     return NextResponse.json({ success: true, message: 'Kalender geleert' });

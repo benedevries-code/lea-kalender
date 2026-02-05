@@ -76,27 +76,42 @@ export default function Home() {
     });
   };
 
+  // Funktion zum Filtern alter Datumsstrings
+  const filterOldDates = (dates: string[]): string[] => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+    
+    return dates.filter(dateStr => {
+      const parts = dateStr.split('-');
+      const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return date >= oneMonthAgo;
+    });
+  };
+
   useEffect(() => {
     fetch('/api/data')
       .then(res => res.json())
       .then((data: StoredData) => {
         // Filtere alte Einträge raus (älter als 1 Monat)
+        const filteredDates = filterOldDates(data.dates || []);
         const filteredLeaRequests = filterOldEntries(data.leaRequests || []);
         const filteredBetreuungEntries = filterOldEntries(data.betreuungEntries || []);
         
-        setSelectedDates(data.dates || []);
+        setSelectedDates(filteredDates);
         setLeaRequests(filteredLeaRequests);
         setBetreuungEntries(filteredBetreuungEntries);
         setLoading(false);
         
         // Wenn etwas gefiltert wurde, speichere die bereinigten Daten
-        if (filteredLeaRequests.length !== (data.leaRequests || []).length || 
+        if (filteredDates.length !== (data.dates || []).length ||
+            filteredLeaRequests.length !== (data.leaRequests || []).length || 
             filteredBetreuungEntries.length !== (data.betreuungEntries || []).length) {
           fetch('/api/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              dates: data.dates || [],
+              dates: filteredDates,
               leaRequests: filteredLeaRequests,
               betreuungEntries: filteredBetreuungEntries
             }),
@@ -528,8 +543,8 @@ export default function Home() {
 
         <div className="flex flex-wrap gap-4 mb-6 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary"></div>
-            <span>Ausgewaehlt</span>
+            <div className="w-6 h-6 rounded bg-blue-500"></div>
+            <span>Familie betreut</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-green-500"></div>
