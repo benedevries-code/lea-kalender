@@ -41,7 +41,6 @@ export default function Home() {
   const [betreuungMessage, setBetreuungMessage] = useState('');
   const [betreuungAbholort, setBetreuungAbholort] = useState('');
   const [betreuungTransport, setBetreuungTransport] = useState('');
-  const [betreuungName, setBetreuungName] = useState('');
   const [betreuungSubmitted, setBetreuungSubmitted] = useState(false);
 
   useEffect(() => {
@@ -121,8 +120,8 @@ export default function Home() {
   };
   // Betreuungseintrag speichern
   const submitBetreuungEntry = async () => {
-    if (!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo || !betreuungName) {
-      alert('Bitte alle Felder ausfüllen (Datum, Uhrzeit, Name)!');
+    if (!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo || !user) {
+      alert('Bitte alle Felder ausfüllen (Datum, Uhrzeit)!');
       return;
     }
     const newEntry: BetreuungEntry = {
@@ -132,7 +131,7 @@ export default function Home() {
       message: betreuungMessage || '',
       abholort: betreuungAbholort || '',
       transport: betreuungTransport || '',
-      name: betreuungName
+      name: user
     };
     const updatedEntries = [...betreuungEntries, newEntry];
     setBetreuungEntries(updatedEntries);
@@ -144,7 +143,6 @@ export default function Home() {
     setBetreuungMessage('');
     setBetreuungAbholort('');
     setBetreuungTransport('');
-    setBetreuungName('');
     setTimeout(() => setBetreuungSubmitted(false), 3000);
   };
 
@@ -203,6 +201,10 @@ export default function Home() {
     return leaRequests.some(r => r.date === dateStr && r.helper);
   };
 
+  const hasBetreuungForDate = (dateStr: string) => {
+    return betreuungEntries.some(e => e.date === dateStr);
+  };
+
   const submitLeaRequest = async () => {
     if (!leaDate || !leaTimeFrom || !leaTimeTo) {
       alert('Bitte waehle Datum und Uhrzeiten aus.');
@@ -237,6 +239,11 @@ export default function Home() {
   const toggleHelper = async (date: string, helperName: string) => {
     const request = leaRequests.find(r => r.date === date);
     if (!request) return;
+
+    // Wenn bereits jemand anderes hilft, nicht überschreiben
+    if (request.helper && request.helper !== helperName) {
+      return;
+    }
 
     const updatedRequests = leaRequests.map(r => {
       if (r.date === date) {
@@ -570,6 +577,7 @@ export default function Home() {
               const isSelected = date ? selectedDates.includes(dateStr) : false;
               const hasHelper = date ? hasHelperForDate(dateStr) : false;
               const leaNeedsHelp = date ? leaNeedsHelpForDate(dateStr) : false;
+              const hasBetreuung = date ? hasBetreuungForDate(dateStr) : false;
 
               return (
                 <button
@@ -579,13 +587,15 @@ export default function Home() {
                   className={"py-4 rounded-xl text-lg font-semibold transition-all " +
                     (!date ? 'invisible ' : '') +
                     (isPast ? 'text-gray-300 cursor-not-allowed ' : '') +
-                    (hasHelper
-                      ? 'bg-green-500 text-white ring-2 ring-green-600 '
-                      : leaNeedsHelp
-                        ? 'bg-pink-500 text-white ring-2 ring-pink-600 '
-                        : isSelected
-                          ? 'bg-primary text-white '
-                          : date && !isPast ? 'hover:bg-gray-100 ' : '')
+                    (hasBetreuung
+                      ? 'bg-blue-500 text-white ring-2 ring-blue-600 '
+                      : hasHelper
+                        ? 'bg-green-500 text-white ring-2 ring-green-600 '
+                        : leaNeedsHelp
+                          ? 'bg-pink-500 text-white ring-2 ring-pink-600 '
+                          : isSelected
+                            ? 'bg-primary text-white '
+                            : date && !isPast ? 'hover:bg-gray-100 ' : '')
                   }
                 >
                   {date?.getDate()}
@@ -730,20 +740,13 @@ export default function Home() {
           </div>
           <div>
             <label className="block text-blue-800 font-medium mb-2">Wer übernimmt die Betreuung?</label>
-            <select
-              value={betreuungName}
-              onChange={e => setBetreuungName(e.target.value)}
-              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            >
-              <option value="">Bitte auswählen</option>
-              {FAMILY_MEMBERS.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+            <div className="w-full px-4 py-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 font-semibold">
+              👤 {user}
+            </div>
           </div>
           <button
             onClick={submitBetreuungEntry}
-            disabled={!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo || !betreuungName}
+            disabled={!betreuungDate || !betreuungTimeFrom || !betreuungTimeTo}
             className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Betreuung eintragen
