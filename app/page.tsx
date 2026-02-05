@@ -47,17 +47,19 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check if user just came from select-user page
+    // Check if user just came from select-user page (same session)
     const justSelected = window.sessionStorage.getItem('bruno_just_selected');
-    const stored = window.localStorage.getItem('bruno_user');
+    const stored = window.sessionStorage.getItem('bruno_user');
 
     if (justSelected && stored) {
-      // User just selected their name, allow access and clear the flag
+      // User just logged in, allow access and clear the flag
       window.sessionStorage.removeItem('bruno_just_selected');
       setUser(stored);
+    } else if (stored) {
+      // User still in same session
+      setUser(stored);
     } else {
-      // Page was reloaded or accessed directly - ask who they are
-      window.localStorage.removeItem('bruno_user');
+      // No session - redirect to login
       router.replace('/select-user');
     }
   }, [router]);
@@ -224,6 +226,12 @@ export default function Home() {
     alert('Link kopiert!');
   };
 
+  const handleLogout = () => {
+    window.sessionStorage.removeItem('bruno_user');
+    window.sessionStorage.removeItem('bruno_just_selected');
+    window.location.href = '/select-user';
+  };
+
   const days = getDaysInMonth(currentMonth);
   const monthNames = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -267,6 +275,12 @@ export default function Home() {
               className="px-6 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Link kopieren
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+            >
+              Ausloggen
             </button>
           </div>
         </div>
@@ -337,12 +351,11 @@ export default function Home() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {FAMILY_MEMBERS.map(name => (
+                    {user && user !== 'Lea' && (
                       <button
-                        key={name}
-                        onClick={() => toggleHelper(request.date, name)}
+                        onClick={() => toggleHelper(request.date, user)}
                         className={"px-4 py-2 rounded-lg font-medium transition-all " +
-                          (request.helper === name
+                          (request.helper === user
                             ? 'bg-green-600 text-white'
                             : request.helper
                               ? 'bg-gray-200 text-gray-500'
@@ -350,9 +363,14 @@ export default function Home() {
                           )
                         }
                       >
-                        {request.helper === name ? '\u2713 ' + name : name}
+                        {request.helper === user ? '\u2713 Ich helfe!' : 'Ich kann helfen!'}
                       </button>
-                    ))}
+                    )}
+                    {request.helper && request.helper !== user && (
+                      <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium">
+                        {request.helper} hilft bereits
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
