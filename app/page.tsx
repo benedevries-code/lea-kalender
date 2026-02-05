@@ -64,14 +64,45 @@ export default function Home() {
     }
   }, [router]);
 
+  // Funktion zum Filtern alter Einträge (älter als 1 Monat)
+  const filterOldEntries = <T extends { date: string }>(entries: T[]): T[] => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+    
+    return entries.filter(entry => {
+      const parts = entry.date.split('-');
+      const entryDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return entryDate >= oneMonthAgo;
+    });
+  };
+
   useEffect(() => {
     fetch('/api/data')
       .then(res => res.json())
       .then((data: StoredData) => {
+        // Filtere alte Einträge raus (älter als 1 Monat)
+        const filteredLeaRequests = filterOldEntries(data.leaRequests || []);
+        const filteredBetreuungEntries = filterOldEntries(data.betreuungEntries || []);
+        
         setSelectedDates(data.dates || []);
-        setLeaRequests(data.leaRequests || []);
-        setBetreuungEntries(data.betreuungEntries || []);
+        setLeaRequests(filteredLeaRequests);
+        setBetreuungEntries(filteredBetreuungEntries);
         setLoading(false);
+        
+        // Wenn etwas gefiltert wurde, speichere die bereinigten Daten
+        if (filteredLeaRequests.length !== (data.leaRequests || []).length || 
+            filteredBetreuungEntries.length !== (data.betreuungEntries || []).length) {
+          fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dates: data.dates || [],
+              leaRequests: filteredLeaRequests,
+              betreuungEntries: filteredBetreuungEntries
+            }),
+          });
+        }
       })
       .catch(() => setLoading(false));
   }, []);
