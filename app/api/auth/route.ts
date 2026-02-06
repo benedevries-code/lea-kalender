@@ -4,7 +4,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 const USERS_KEY = 'bruno-kalender-users';
+const LOGINS_KEY = 'bruno-kalender-logins';
 const LOCAL_FILE = path.join(process.cwd(), 'users-local.json');
+const LOCAL_LOGINS_FILE = path.join(process.cwd(), 'logins-local.json');
 
 interface UserData {
   name: string;
@@ -14,6 +16,12 @@ interface UserData {
 
 interface UsersStore {
   [key: string]: UserData;
+}
+
+interface LoginEntry {
+  name: string;
+  timestamp: string;
+  type: 'login' | 'password_set';
 }
 
 // Check if Redis is configured
@@ -70,11 +78,65 @@ async function setUsers(users: UsersStore): Promise<boolean> {
   }
 }
 
-// GET: Prüfen ob ein Benutzer bereits ein Passwort hat
+// Helper functions for login history
+async function getLocalLogins(): Promise<LoginEntry[]> {
+  try {
+    const data = await fs.readFile(LOCAL_LOGINS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+async function setLocalLogins(logins: LoginEntry[]): Promise<boolean> {
+  try {
+    await fs.writeFile(LOCAL_LOGINS_FILE, JSON.stringify(logins, null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function getLogins(): Promise<LoginEntry[]> {
+  if (!redis) {
+    return getLocalLogins();
+  }
+  try {
+    const data = await redis.get<LoginEntry[]>(LOGINS_KEY);
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function addLogin(entry: LoginEntry): Promise<boolean> {
+  const logins = await getLogins();
+  // Behalte nur die letzten 100 Einträge
+  const updatedLogins = [...logins, entry].slice(-100);
+  
+  if (!redis) {
+    return setLocalLogins(updatedLogins);
+  }
+  try {
+    await redis.set(LOGINS_KEY, JSON.stringify(updatedLogins));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// GET: Prüfen ob ein Benutzer bereits ein Passwort hat oder Login-Historie abrufen
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const name = searchParams.get('name');
+    const action = searchParams.get('action');
+
+    // Admin: Login-Historie abrufen
+    if (action === 'logins') {
+      const logins = await getLogins();
+      return NextResponse.json({ logins });
+    }
 
     if (!name) {
       return NextResponse.json({ error: 'Name erforderlich' }, { status: 400 });
@@ -118,6 +180,14 @@ export async function POST(request: Request) {
       if (!success) {
         return NextResponse.json({ error: 'Fehler beim Speichern' }, { status: 500 });
       }
+      
+      // Login-Event speichern
+      await addLogin({
+        name,
+        timestamp: new Date().toISOString(),
+        type: 'password_set'
+      });
+      
       return NextResponse.json({ success: true, message: 'Passwort gesetzt' });
     } else {
       // Login: Passwort verifizieren
@@ -128,6 +198,13 @@ export async function POST(request: Request) {
       if (users[name].password !== password) {
         return NextResponse.json({ error: 'Falsches Passwort', success: false }, { status: 401 });
       }
+
+      // Login-Event speichern
+      await addLogin({
+        name,
+        timestamp: new Date().toISOString(),
+        type: 'login'
+      });
 
       return NextResponse.json({ success: true, message: 'Login erfolgreich' });
     }

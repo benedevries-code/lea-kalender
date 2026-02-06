@@ -44,7 +44,9 @@ export const LEA_HELP_OPTIONS = [
 export const FAMILY_MEMBERS = [
   'Katja',
   'Maren',
+  'Mona',
   'Noah & Mareike',
   'Volker',
   'Lukas & Mandy',
+  'Admin',
 ];

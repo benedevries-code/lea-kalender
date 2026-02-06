@@ -13,6 +13,13 @@ interface BetreuungEntry {
   transport?: string;
   name: string;
 }
+
+interface LoginEntry {
+  name: string;
+  timestamp: string;
+  type: 'login' | 'password_set';
+}
+
 interface StoredData {
   dates: string[];
   leaRequests: { date: string; timeFrom: string; timeTo: string; message: string; abholort?: string; transport?: string; helper?: string }[];
@@ -42,6 +49,8 @@ export default function Home() {
   const [betreuungAbholort, setBetreuungAbholort] = useState('');
   const [betreuungTransport, setBetreuungTransport] = useState('');
   const [betreuungSubmitted, setBetreuungSubmitted] = useState(false);
+  // Admin: Login-Historie
+  const [loginHistory, setLoginHistory] = useState<LoginEntry[]>([]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -120,6 +129,20 @@ export default function Home() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  // Admin: Login-Historie laden
+  useEffect(() => {
+    if (user === 'Admin') {
+      fetch('/api/auth?action=logins')
+        .then(res => res.json())
+        .then(data => {
+          if (data.logins) {
+            setLoginHistory(data.logins.reverse()); // Neueste zuerst
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const saveData = async (
     dates: string[],
@@ -404,7 +427,7 @@ export default function Home() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {user && user !== 'Lea' && (
+                    {user && user !== 'Lea' && user !== 'Admin' && (
                       <button
                         onClick={() => toggleHelper(request.date, user)}
                         className={"px-4 py-2 rounded-lg font-medium transition-all " +
@@ -432,8 +455,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Lea Hilfe-Formular - nur für Lea sichtbar */}
-      {user === 'Lea' && (
+      {/* Lea Hilfe-Formular - nur für Lea und Admin sichtbar */}
+      {(user === 'Lea' || user === 'Admin') && (
         <div className="bg-pink-100 border-2 border-pink-400 rounded-2xl shadow-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-3xl">&#128105;</span>
@@ -768,6 +791,66 @@ export default function Home() {
           </button>
         </div>
       </div>
+
+      {/* Admin: Login-Historie */}
+      {user === 'Admin' && (
+        <div className="bg-purple-50 border-2 border-purple-300 rounded-2xl shadow-xl p-6 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl">📋</span>
+            <div>
+              <h2 className="text-xl font-bold text-purple-800">Login-Historie</h2>
+              <p className="text-purple-700">Übersicht wer sich wann eingeloggt hat</p>
+            </div>
+          </div>
+
+          {loginHistory.length === 0 ? (
+            <p className="text-purple-600 text-center py-4">Noch keine Logins aufgezeichnet.</p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-purple-100 sticky top-0">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-purple-800 font-semibold">Benutzer</th>
+                    <th className="text-left px-3 py-2 text-purple-800 font-semibold">Datum & Uhrzeit</th>
+                    <th className="text-left px-3 py-2 text-purple-800 font-semibold">Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loginHistory.map((entry, index) => {
+                    const date = new Date(entry.timestamp);
+                    const formattedDate = date.toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    });
+                    const formattedTime = date.toLocaleTimeString('de-DE', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                    return (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                        <td className="px-3 py-2 text-purple-900 font-medium">{entry.name}</td>
+                        <td className="px-3 py-2 text-purple-700">{formattedDate}, {formattedTime} Uhr</td>
+                        <td className="px-3 py-2">
+                          {entry.type === 'login' ? (
+                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              ✓ Login
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                              🔑 Passwort gesetzt
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
