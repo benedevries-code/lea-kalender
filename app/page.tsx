@@ -376,6 +376,10 @@ export default function Home() {
             <span>Nur <strong>Katja</strong>, <strong>Maren</strong> und <strong>Mareike</strong> duerfen Bruno direkt aus der Kita abholen!</span>
           </p>
           <p className="text-amber-800 font-medium flex items-center gap-2">
+            <span className="text-xl">&#128101;</span>
+            <span>Andere Personen duerfen Bruno <strong>mit vorheriger Absprache und Planung</strong> abholen.</span>
+          </p>
+          <p className="text-amber-800 font-medium flex items-center gap-2">
             <span className="text-xl">*</span>
             <span>Bitte an den <strong>Kindersitz</strong> denken!</span>
           </p>
